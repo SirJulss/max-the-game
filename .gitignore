@@ -1,0 +1,16 @@
+# Godot spezifisch
+.import/
+.godot/
+
+# Betriebssystem-Dateien
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Build / Exported files
+export/
+bin/
