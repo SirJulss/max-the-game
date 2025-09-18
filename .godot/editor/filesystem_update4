@@ -1,0 +1,14 @@
+res://src/state.gd
+res://Scenes/Levels/Player/Player.tscn
+res://src/Player/BasicMovement.gd
+res://Scenes/Levels/test_world.tscn
+res://src/Camera/OrbitCamera.gd
+res://Scenes/Levels/test_world.gdshader
+res://src/state_machine/node_state.gd
+res://src/state_machine/node_state_machine.gd
+res://Scenes/Levels/Player/idle_state.gd
+res://src/Player/game_input_events.gd
+res://src/state_machine/idle_state.gd
+res://src/state_machine/walk_state.gd
+res://Scenes/Levels/Player/player.gd
+res://README.md
