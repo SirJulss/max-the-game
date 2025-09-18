@@ -9,3 +9,6 @@ res://src/state_machine/node_state_machine.gd
 res://Scenes/Levels/Player/idle_state.gd
 res://src/Player/game_input_events.gd
 res://src/state_machine/idle_state.gd
+res://src/state_machine/walk_state.gd
+res://Scenes/Levels/Player/player.gd
+res://README.md

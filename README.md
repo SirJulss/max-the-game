@@ -1,6 +1,6 @@
 # Max The Game
 
-**Max The Game** is a 2.5D roguelike streamer simulation with action-packed combat.  
+**Max The Game** is a 2D roguelike streamer simulation with action-packed combat.  
 The goal is to help Max become the best streamer in the world.  
 
 He must manage his **basic needs** like hunger, hygiene, and sleep while fighting enemies, upgrading equipment, and reaching a daily view goal.  
