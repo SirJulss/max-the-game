@@ -1,0 +1,62 @@
+[gd_scene load_steps=9 format=3 uid="uid://ceuqacfksvgw2"]
+
+[ext_resource type="Texture2D" uid="uid://5ll8sv7nbivr" path="res://Assets/Maxanim/Idle/IdleMaxFront.png" id="1_7c1qw"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nu7tq"]
+albedo_color = Color(0.47832084, 0.72571135, 0.3670993, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7c1qw"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_i7llj"]
+atlas = ExtResource("1_7c1qw")
+region = Rect2(0, 0, 32, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_74u7v"]
+atlas = ExtResource("1_7c1qw")
+region = Rect2(32, 0, 32, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_cjeqb"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_i7llj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_74u7v")
+}],
+"loop": true,
+"name": &"IdleFrontMax",
+"speed": 2.0
+}]
+
+[sub_resource type="Animation" id="Animation_y4ur2"]
+resource_name = "_IdleFrontMax"
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_8re3b"]
+_data = {
+&"_IdleFrontMax": SubResource("Animation_y4ur2")
+}
+
+[node name="Node3D" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(100, 0, 0, 0, 100, 0, 0, 0, 100, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_nu7tq")
+mesh = SubResource("PlaneMesh_7c1qw")
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3730415, 0)
+billboard = 1
+double_sided = false
+texture_filter = 0
+sprite_frames = SubResource("SpriteFrames_cjeqb")
+animation = &"IdleFrontMax"
+frame_progress = 0.89148194
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_8re3b")
+}
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3730415, 1.4674084)
