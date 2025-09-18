@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://b5m1kd01jkrvd" path="res://Assets/Player/Idle/MaxIdle.png" id="1_f801k"]
 [ext_resource type="Script" uid="uid://crvb40rmcfkja" path="res://src/state_machine/node_state_machine.gd" id="2_7i3vx"]
-[ext_resource type="Script" uid="uid://c6dpguy3miov" path="res://Scenes/Levels/Player/idle_state.gd" id="3_b6orr"]
+[ext_resource type="Script" uid="uid://c6dpguy3miov" path="res://src/state_machine/idle_state.gd" id="3_b6orr"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_7wioy"]
 atlas = ExtResource("1_f801k")
