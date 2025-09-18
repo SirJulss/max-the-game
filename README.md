@@ -9,7 +9,7 @@ Combat is dynamic and offers **attack combos, sprinting, parrying, blocking**, a
 ---
 
 ## Project Structure
-
+```
 max-the-game/
 ├── Assets/ # All graphics, audio, and font resources
 │ ├── Textures/ # Images, icons, textures
@@ -29,7 +29,7 @@ max-the-game/
 ├── .gitignore # Ignored files like cache and import files
 ├── project.godot # Main Godot project file
 └── README.md # This file
-
+```
 ---
 
 > **Note:** Empty folders like `Assets/` or `Scripts/` should contain a `.gitkeep` file so Git tracks them.  
