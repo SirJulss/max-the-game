@@ -1,0 +1,9 @@
+AnimatedSprite3D
+AnimatedSprite2D
+Sprite3D
+Camera3D
+WorldEnvironment
+DirectionalLight3D
+OmniLight3D
+AnimationPlayer
+MeshInstance3D
