@@ -2,7 +2,8 @@ extends NodeState
 
 @export var player: Player
 @export var animated_sprite_2d: AnimatedSprite2D
-@export var speed: int = 50
+@export var walk_speed: int = 70
+@export var sprint_speed: int = 160   # schneller laufen
 
 var animation_map := {
 	Vector2.UP: "MaxWalkUp",
@@ -18,12 +19,16 @@ var animation_map := {
 func _on_physics_process(_delta: float) -> void:
 	var direction: Vector2 = GameInputEvent.movement_input()
 
-	# Animation auswählen
+	# Sprint
+	var current_speed = walk_speed
+	if Input.is_action_pressed("sprint"):   
+		current_speed = sprint_speed
+		
 	if direction != Vector2.ZERO:
 		var animation_name = animation_map.get(direction, "MaxWalkDown")
 		animated_sprite_2d.play(animation_name)
 
-	player.velocity = direction * speed
+	player.velocity = direction * current_speed
 	player.move_and_slide()
 
 	if direction != Vector2.ZERO:
