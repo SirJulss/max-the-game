@@ -269,8 +269,8 @@ script = ExtResource("4_b6orr")
 player = NodePath("../..")
 animated_sprite_2d = NodePath("../../AnimatedSprite2D")
 speed = 140.0
-accel = 400.0
-decel = 30.0
+accel = 1000.0
+decel = 500.0
 
 [node name="Dash" type="Node" parent="StateMachine"]
 
@@ -278,6 +278,8 @@ decel = 30.0
 script = ExtResource("7_r27yw")
 player = NodePath("../..")
 animated_sprite_2d = NodePath("../../AnimatedSprite2D")
+accel = 1000.0
+decel = 500.0
 
 [node name="Attack" type="Node" parent="StateMachine"]
 
@@ -288,6 +290,5 @@ animated_sprite_2d = NodePath("../../AnimatedSprite2D")
 [node name="Skid" type="Node" parent="StateMachine" node_paths=PackedStringArray("player")]
 script = ExtResource("8_7x6lk")
 player = NodePath("../..")
-skid_friction = 0.9
-stop_threshold = 8.0
-min_skid_time = 0.18
+stop_threshold = 9.0
+min_skid_time = 0.5
