@@ -18,7 +18,6 @@ func _play_if_changed(anim_name: String) -> void:
 func _on_physics_process(_delta: float) -> void:
 	# Wenn Input vorhanden -> Walk
 	if GameInputEvent.is_movement_input():
-		player.player_direction = GameInputEvent.movement_input().normalized()
 		transition.emit("Walk")
 		return
 

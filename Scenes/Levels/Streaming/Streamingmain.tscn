@@ -1,0 +1,68 @@
+[gd_scene load_steps=10 format=3 uid="uid://ddk7wbc5ecjt7"]
+
+[ext_resource type="Texture2D" uid="uid://clgxt21jndsxn" path="res://Assets/Gameplay/Streaming/Pc/PCOverlay.png" id="1_gfb33"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jaw7t"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(0, 0, 320, 180)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uufdk"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(320, 0, 320, 180)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rtaqm"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(640, 0, 320, 180)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8fl3t"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(960, 0, 320, 180)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_532mq"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(1280, 0, 320, 180)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_02ur8"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(1600, 0, 320, 180)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2fta8"]
+atlas = ExtResource("1_gfb33")
+region = Rect2(1920, 0, 320, 180)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_uufdk"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jaw7t")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uufdk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rtaqm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8fl3t")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_532mq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_02ur8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2fta8")
+}],
+"loop": true,
+"name": &"default",
+"speed": 15.0
+}]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+top_level = true
+position = Vector2(320, 180)
+scale = Vector2(2, 2)
+sprite_frames = SubResource("SpriteFrames_uufdk")

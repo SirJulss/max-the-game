@@ -1,12 +1,13 @@
-# player.gd
 class_name Player
 extends CharacterBody2D
 
-# Blick-/Facing-Info (kann von anderen Systemen benutzt werden)
+# ----------------------
+# Blick-/Facing-Info
+# ----------------------
 var player_direction: Vector2 = Vector2.DOWN
 
 # ----------------------
-# Direction / Animation Maps (zentral)
+# Richtungen & Animationen
 # ----------------------
 var DIRS_8 := {
 	"R":  Vector2(1, 0).normalized(),
@@ -54,7 +55,7 @@ func _ready() -> void:
 		player_direction = player_direction.normalized()
 
 # ----------------------
-# Helper: nächster Direction-Key per Dot-Produkt
+# Hilfsfunktionen
 # ----------------------
 func _closest_dir_key(vec: Vector2, dir_table: Dictionary) -> String:
 	if vec.length() < 0.001:
@@ -71,9 +72,6 @@ func _closest_dir_key(vec: Vector2, dir_table: Dictionary) -> String:
 			best_key = key
 	return best_key
 
-# ----------------------
-# Komfort-Funktionen: Animation anhand Maus oder Vektor
-# ----------------------
 func get_animation_for_mouse(mouse_pos: Vector2, use_idle: bool = false, fallback: String = "") -> String:
 	var dir := mouse_pos - global_position
 	if dir.length() < 0.001:

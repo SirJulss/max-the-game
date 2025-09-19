@@ -241,7 +241,8 @@ animations = [{
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_f801k"]
-height = 48.0
+radius = 13.0
+height = 26.0
 
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1_jnd6u")
@@ -251,7 +252,7 @@ sprite_frames = SubResource("SpriteFrames_e4gi4")
 animation = &"MaxWalkUp"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, 5)
+position = Vector2(0, 19)
 shape = SubResource("CapsuleShape2D_f801k")
 
 [node name="StateMachine" type="Node" parent="." node_paths=PackedStringArray("initial_node_state")]
@@ -267,6 +268,9 @@ animated_sprite_2d = NodePath("../../AnimatedSprite2D")
 script = ExtResource("4_b6orr")
 player = NodePath("../..")
 animated_sprite_2d = NodePath("../../AnimatedSprite2D")
+speed = 140.0
+accel = 400.0
+decel = 30.0
 
 [node name="Dash" type="Node" parent="StateMachine"]
 
@@ -284,3 +288,6 @@ animated_sprite_2d = NodePath("../../AnimatedSprite2D")
 [node name="Skid" type="Node" parent="StateMachine" node_paths=PackedStringArray("player")]
 script = ExtResource("8_7x6lk")
 player = NodePath("../..")
+skid_friction = 0.9
+stop_threshold = 8.0
+min_skid_time = 0.18

@@ -1,6 +1,9 @@
+Node2D
+AnimatedSprite2D
+GPUParticles2D
+CPUParticles2D
 Node
 CollisionShape2D
-AnimatedSprite2D
 CharacterBody2D
 DirectionalLight3D
 CollisionShape3D
@@ -10,5 +13,3 @@ AnimationPlayer
 Camera3D
 Node3D
 CharacterBody3D
-StaticBody3D
-MeshInstance3D
