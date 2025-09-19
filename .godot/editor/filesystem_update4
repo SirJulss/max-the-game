@@ -1,3 +1,7 @@
 res://Scenes/Levels/Player/Player.tscn
+res://src/state_machine/skid_state.gd
 res://src/state_machine/walk_state.gd
+res://src/state_machine/run_state.gd
+res://Scenes/Levels/Player/player.gd
+res://src/state_machine/idle_state.gd
 res://src/Player/game_input_events.gd

@@ -2,18 +2,16 @@ extends NodeState
 @export var player: Player
 @export var animated_sprite_2d: AnimatedSprite2D
 
-@export var speed: float = 120.0              # Zielgeschwindigkeit
-@export var accel: float = 1000.0             # Beschleunigung (units/sec^2)
-@export var decel: float = 1200.0             # Brems-Rate wenn keine Input
-@export var skid_start_speed: float = 30.0
-
-# Facing smoothing (wie schnell die Blickrichtung zur Maus lerpt)
-@export var facing_lerp_speed: float = 12.0
+@export var run_speed: float = 220.0
+@export var accel: float = 1600.0
+@export var decel: float = 1400.0
+@export var skid_start_speed: float = 40.0
+@export var facing_lerp_speed: float = 16.0
 
 var _current_anim := ""
 
 func _on_enter() -> void:
-	animated_sprite_2d.speed_scale = 1.0
+	animated_sprite_2d.speed_scale = 1.6
 	_current_anim = ""
 
 func _play_if_changed(anim_name: String) -> void:
@@ -27,49 +25,36 @@ func _on_physics_process(_delta: float) -> void:
 	var input_dir: Vector2 = GameInputEvent.movement_input()
 	var has_input := input_dir != Vector2.ZERO
 
-	# ----------------------------
-	# Movement: Beschleunigen / Abbremsen
-	# ----------------------------
 	if has_input:
-		var target_vel = input_dir.normalized() * speed
-		# player.velocity bewegt sich allmählich in Richtung target
+		var target_vel = input_dir.normalized() * run_speed
 		player.velocity = player.velocity.move_toward(target_vel, accel * _delta)
 		player.move_and_slide()
 	else:
-		# keine Eingabe -> abbremsen
+		# abbremsen falls sprint aufgehört
 		if player.velocity.length() > 0.1:
 			player.velocity = player.velocity.move_toward(Vector2.ZERO, decel * _delta)
 			player.move_and_slide()
 		else:
 			player.velocity = Vector2.ZERO
 
-	# ----------------------------
-	# Facing: sanft zur Maus
-	# ----------------------------
+	# Facing lerp zur Maus (etwas schneller beim sprinten)
 	var mouse_dir := (player.get_global_mouse_position() - player.global_position)
 	if mouse_dir.length() < 0.001:
 		mouse_dir = Vector2.DOWN
-	# aktuell gespeicherte Blickrichtung lerpt zur Mausrichtung
 	player.player_direction = player.player_direction.move_toward(mouse_dir.normalized(), facing_lerp_speed * _delta)
 
-	# ----------------------------
-	# Animation basierend auf Blickrichtung
-	# ----------------------------
 	var anim = player.get_animation_for_direction(player.player_direction, false, "MaxWalkDown")
 	_play_if_changed(anim)
 
-	# ----------------------------
-	# Anim-Speed: skalieren je nach Geschwindigkeit
-	# ----------------------------
-	var speed_ratio = clamp(player.velocity.length() / speed, 0.0, 1.5)
-	animated_sprite_2d.speed_scale = 0.8 + speed_ratio * 1.2   # Justierbar: 0.8..2.0
+	# anim-speed basierend auf Verhältnis Geschwindigkeit / run_speed
+	var speed_ratio = clamp(player.velocity.length() / run_speed, 0.0, 1.6)
+	animated_sprite_2d.speed_scale = 1.0 + speed_ratio * 1.4
 
-	# ----------------------------
-	# State transitions
-	# ----------------------------
-	if has_input and Input.is_action_pressed("sprint"):
-		transition.emit("Run")
+	# sprint losgelassen -> zurück zu Walk
+	if not Input.is_action_pressed("sprint"):
+		transition.emit("Walk")
 	else:
+		# wenn kein Input aber noch momentum -> skid/idle
 		if not has_input:
 			if player.velocity.length() > skid_start_speed:
 				transition.emit("Skid")
