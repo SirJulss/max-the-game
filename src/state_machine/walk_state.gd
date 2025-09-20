@@ -1,6 +1,11 @@
 extends NodeState
 @export var player: Player
 @export var animated_sprite_2d: AnimatedSprite2D
+<<<<<<< HEAD
+=======
+@export var walk_speed: int = 70
+@export var sprint_speed: int = 160   # schneller laufen
+>>>>>>> origin/main
 
 @export var speed: float = 220.0
 @export var accel: float = 1600.0
@@ -8,7 +13,31 @@ extends NodeState
 @export var skid_start_speed: float = 40.0
 @export var facing_lerp_speed: float = 16.0
 
+<<<<<<< HEAD
 var _current_anim := ""
+=======
+func _on_physics_process(_delta: float) -> void:
+	var direction: Vector2 = GameInputEvent.movement_input()
+
+	# Sprint
+	var current_speed = walk_speed
+	if Input.is_action_pressed("sprint"):   
+		current_speed = sprint_speed
+		
+	if direction != Vector2.ZERO:
+		var animation_name = animation_map.get(direction, "MaxWalkDown")
+		animated_sprite_2d.play(animation_name)
+
+	player.velocity = direction * current_speed
+	player.move_and_slide()
+
+	if direction != Vector2.ZERO:
+		player.player_direction = direction
+
+func _on_next_transitions() -> void:
+	if !GameInputEvent.is_movement_input():
+		transition.emit("Idle")
+>>>>>>> origin/main
 
 func _on_enter() -> void:
 	animated_sprite_2d.speed_scale = 1.0

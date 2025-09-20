@@ -2,5 +2,8 @@ res://Scenes/Levels/Player/Player.tscn
 res://src/Streaming/PCscreen.gd
 res://Scenes/Levels/Player/player.gd
 res://src/state_machine/walk_state.gd
+<<<<<<< HEAD
 res://src/state_machine/skid_state.gd
 res://src/state_machine/idle_state.gd
+=======
+>>>>>>> origin/main
