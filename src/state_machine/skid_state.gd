@@ -2,7 +2,7 @@ extends NodeState
 @export var player: Player
 @export var skid_friction: float = 0.85
 @export var stop_threshold: float = 6.0
-@export var min_skid_time: float = 0.08    # evtl. kleiner machen
+@export var min_skid_time: float = 0.08
 @export var turn_responsiveness: float = 8.0
 @export var regain_dot_threshold: float = 0.5   # wie gut Input mit velocity übereinstimmen muss
 @export var immediate_regain_speed: float = 30.0 # wenn vlen < das -> sofort regain

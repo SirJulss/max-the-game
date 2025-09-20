@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://curhorgq2mdt6"]
+[gd_scene load_steps=36 format=3 uid="uid://curhorgq2mdt6"]
 
 [ext_resource type="Texture2D" uid="uid://b5m1kd01jkrvd" path="res://Assets/Player/Idle/MaxIdle.png" id="1_f801k"]
 [ext_resource type="Script" uid="uid://cjptts6tvv7rn" path="res://Scenes/Levels/Player/player.gd" id="1_jnd6u"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://b7ys2txrsjwxe" path="res://Assets/Player/Walk/MaxWalk.png" id="2_ikngb"]
 [ext_resource type="Script" uid="uid://c6dpguy3miov" path="res://src/state_machine/idle_state.gd" id="3_b6orr"]
 [ext_resource type="Script" uid="uid://de8a3akljs2mn" path="res://src/state_machine/walk_state.gd" id="4_b6orr"]
+[ext_resource type="Script" uid="uid://d1ar84mtsxa8x" path="res://src/state_machine/dash_state.gd" id="7_qkycj"]
 [ext_resource type="Script" uid="uid://e03m03taxk5w" path="res://src/state_machine/run_state.gd" id="7_r27yw"]
 [ext_resource type="Script" uid="uid://c1qkjyux5v26o" path="res://src/state_machine/skid_state.gd" id="8_7x6lk"]
 
@@ -273,6 +274,7 @@ accel = 1000.0
 decel = 500.0
 
 [node name="Dash" type="Node" parent="StateMachine"]
+script = ExtResource("7_qkycj")
 
 [node name="Run" type="Node" parent="StateMachine" node_paths=PackedStringArray("player", "animated_sprite_2d")]
 script = ExtResource("7_r27yw")
@@ -290,5 +292,6 @@ decel = 500.0
 [node name="Skid" type="Node" parent="StateMachine" node_paths=PackedStringArray("player")]
 script = ExtResource("8_7x6lk")
 player = NodePath("../..")
-stop_threshold = 9.0
+skid_friction = 0.88
+stop_threshold = 8.0
 min_skid_time = 0.5
