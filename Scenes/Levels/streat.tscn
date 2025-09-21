@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://birj83r1iyeqa"]
+
+[ext_resource type="Texture2D" uid="uid://cush21wnpsyot" path="res://Assets/test/streat.jpg" id="1_m2cp0"]
+[ext_resource type="PackedScene" uid="uid://curhorgq2mdt6" path="res://Scenes/Levels/Player/Player.tscn" id="2_kaduv"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Streat" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("1_m2cp0")
+
+[node name="Player" parent="." instance=ExtResource("2_kaduv")]
+
+[node name="Camera2D" type="Camera2D" parent="Player"]

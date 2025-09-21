@@ -1,3 +1,4 @@
+Camera2D
 Node2D
 AnimatedSprite2D
 GPUParticles2D
@@ -12,4 +13,3 @@ AnimationTree
 AnimationPlayer
 Camera3D
 Node3D
-CharacterBody3D

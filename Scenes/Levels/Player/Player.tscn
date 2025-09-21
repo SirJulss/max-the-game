@@ -246,6 +246,7 @@ radius = 13.0
 height = 26.0
 
 [node name="Player" type="CharacterBody2D"]
+top_level = true
 script = ExtResource("1_jnd6u")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
@@ -269,12 +270,13 @@ animated_sprite_2d = NodePath("../../AnimatedSprite2D")
 script = ExtResource("4_b6orr")
 player = NodePath("../..")
 animated_sprite_2d = NodePath("../../AnimatedSprite2D")
-speed = 140.0
 accel = 1000.0
 decel = 500.0
 
-[node name="Dash" type="Node" parent="StateMachine"]
+[node name="Dash" type="Node" parent="StateMachine" node_paths=PackedStringArray("player", "animated_sprite_2d")]
 script = ExtResource("7_qkycj")
+player = NodePath("../..")
+animated_sprite_2d = NodePath("../../AnimatedSprite2D")
 
 [node name="Run" type="Node" parent="StateMachine" node_paths=PackedStringArray("player", "animated_sprite_2d")]
 script = ExtResource("7_r27yw")

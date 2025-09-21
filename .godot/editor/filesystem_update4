@@ -1,3 +1,0 @@
-res://Scenes/Levels/Player/Player.tscn
-res://src/state_machine/dash_state.gd
-res://src/state_machine/walk_state.gd
