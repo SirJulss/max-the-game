@@ -34,7 +34,11 @@ func _on_physics_process(delta: float) -> void:
 		else:
 			transition.emit("Walk")
 		return
-
+	
+	if Input.is_action_just_pressed("attack"):
+		transition.emit("Attack")
+		return
+	
 	# Wenn Input vorhanden und Geschwindigkeit ausreichend groß -> evtl. direkte Rückeroberung
 	if has_input and vlen > EPS:
 		var inorm = input_dir.normalized()
