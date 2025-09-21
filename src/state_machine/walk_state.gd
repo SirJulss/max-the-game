@@ -24,7 +24,11 @@ func _play_if_changed(anim_name: String) -> void:
 func _on_physics_process(delta: float) -> void:
 	var input_dir: Vector2 = GameInputEvent.movement_input()
 	var has_input := input_dir != Vector2.ZERO
-
+	
+	if Input.is_action_just_pressed("attack"):
+		transition.emit("Attack")
+		return
+	
 	# Bewegung: Zielgeschwindigkeit setzen, velocity in Richtung move_toward
 	if has_input:
 		var target_vel = input_dir.normalized() * run_speed

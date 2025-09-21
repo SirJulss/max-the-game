@@ -20,7 +20,10 @@ func _on_physics_process(_delta: float) -> void:
 	if GameInputEvent.is_movement_input():
 		transition.emit("Walk")
 		return
-
+	
+	if Input.is_action_just_pressed("attack"):
+		transition.emit("Attack")
+		return
 	# Blickrichtung zur Maus (Idle verwendet 4 Richtungen)
 	var anim = player.get_animation_for_mouse(player.get_global_mouse_position(), true, "MaxIdleFront")
 	_play_if_changed(anim)

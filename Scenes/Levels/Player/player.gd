@@ -1,6 +1,10 @@
 class_name Player
 extends CharacterBody2D
 
+# Fügen Sie diese Properties hinzu
+@export var decel: float = 1400.0  # Bremsbeschleunigung
+@export var accel: float = 1600.0  # Beschleunigung
+
 # ----------------------
 # Blick-/Facing-Info
 # ----------------------
@@ -20,15 +24,28 @@ var DIRS_8 := {
 	"RD": Vector2(1, 1).normalized()
 }
 
-var ANIM_MAP_8 := {
+# Bewegung Animation Map
+var MOVE_ANIM_MAP_8 := {
 	"R":  "MaxWalkRight",
-	"RU": "MaxWalkRightUp",
-	"U":  "MaxWalkUp",
-	"LU": "MaxWalkLeftUp",
+	"RU": "MaxWalkBackRight", 
+	"U":  "MaxWalkBack",
+	"LU": "MaxWalkBackLeft",
 	"L":  "MaxWalkLeft",
-	"LD": "MaxWalkLeftDown",
-	"D":  "MaxWalkDown",
-	"RD": "MaxWalkRightDown"
+	"LD": "MaxWalkFrontLeft",
+	"D":  "MaxWalkFront",
+	"RD": "MaxWalkFrontRight"
+}
+
+# Attack Animation Map
+var ATTACK_ANIM_MAP_8 := {
+	"R":  "MaxBRight",
+	"RU": "MaxBBackRight",
+	"U":  "MaxBBack",
+	"LU": "MaxBBackLeft",
+	"L":  "MaxBLeft",
+	"LD": "MaxBFrontLeft",
+	"D":  "MaxBFront",
+	"RD": "MaxBFrontRight"
 }
 
 var IDLE_DIRS := {
@@ -81,7 +98,7 @@ func get_animation_for_mouse(mouse_pos: Vector2, use_idle: bool = false, fallbac
 		return IDLE_ANIM_MAP.get(key, fallback)
 	else:
 		var key = _closest_dir_key(dir, DIRS_8)
-		return ANIM_MAP_8.get(key, fallback)
+		return MOVE_ANIM_MAP_8.get(key, fallback)
 
 func get_animation_for_direction(vec: Vector2, use_idle: bool = false, fallback: String = "") -> String:
 	if vec.length() < 0.001:
@@ -91,4 +108,10 @@ func get_animation_for_direction(vec: Vector2, use_idle: bool = false, fallback:
 		return IDLE_ANIM_MAP.get(key, fallback)
 	else:
 		var key = _closest_dir_key(vec, DIRS_8)
-		return ANIM_MAP_8.get(key, fallback)
+		return MOVE_ANIM_MAP_8.get(key, fallback)
+
+func get_attack_animation_for_direction(vec: Vector2, fallback: String = "MaxBFront") -> String:
+	if vec.length() < 0.001:
+		vec = Vector2.DOWN
+	var key = _closest_dir_key(vec, DIRS_8)
+	return ATTACK_ANIM_MAP_8.get(key, fallback)
