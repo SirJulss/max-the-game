@@ -1,6 +1,6 @@
 [gd_scene load_steps=10 format=3 uid="uid://ddk7wbc5ecjt7"]
 
-[ext_resource type="Texture2D" uid="uid://clgxt21jndsxn" path="res://Assets/Gameplay/Streaming/Pc/PCOverlay.png" id="1_gfb33"]
+[ext_resource type="Texture2D" path="res://Assets/Gameplay/Streaming/Pc/PCOverlay.png" id="1_gfb33"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_jaw7t"]
 atlas = ExtResource("1_gfb33")
