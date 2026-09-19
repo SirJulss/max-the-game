@@ -61,6 +61,8 @@ Heat increases regular enemy count and enemy health/damage. Encounters spawn ene
 
 Apartment/yard composition, minigames, telegraphs, projectiles, and other feedback combine retained artwork with code-drawn elements. The original NPC source files remain available, and `tools/export_aseprite.py` creates the committed PNG exports without requiring an Aseprite installation. Small sound effects are synthesized locally. The supplied source assets retain their existing provenance; this change does not grant new rights to them.
 
+The interface also uses **Tiny5**, copyright 2022–2024 The Tiny5 Project Authors, distributed under the SIL Open Font License 1.1. Its font and license are included as `Assets/Fonts/Tiny5-Regular.ttf` and `Assets/Fonts/OFL.txt`; the original project is [Gissio/font_tiny5](https://github.com/Gissio/font_tiny5).
+
 ## Code map
 
 | Path | Responsibility |
@@ -80,7 +82,11 @@ The project uses native GDScript and Godot nodes, with no autoload requirement o
 
 Run payloads are versioned and validated before replacing live state. Checkpoints are allowed in `setup` and `shop`; the controller presents `setup` checkpoints as apartment mornings. They retain HP, currency, purchases, equipped weapon, returning fans, shop inventory, sold flags, reroll costs, and RNG state. RNG state is serialized as text to preserve its full integer precision through JSON. Stream and combat callbacks cannot deposit a reward twice. The controller saves through a temporary file and rename; win/loss removes the run checkpoint but retains the profile.
 
-At implementation verification, **235 model checks**, **60 game-flow checks**, and **18 combat-smoke assertions** passed. The GitHub Actions workflow imports assets and runs the same suites on Linux using official Godot 4.5.1; a hosted CI run still requires the changes to be pushed. Headless tests require no .NET runtime or export templates.
+At implementation verification, **235 model checks**, **60 game-flow checks**, and **18 combat-smoke assertions** passed. The GitHub Actions workflow imports assets and runs the same suites on Linux using official Godot 4.5.1; the hosted run also passed. Headless tests require no .NET runtime or export templates.
+
+The final apartment/minigame/NPC version also passed a fresh asset import and all three suites through `tools/test.ps1` with Godot 4.5.1 on Windows.
+
+The standalone Windows release was built with the official Godot 4.5.1 release template. All 60 flow checks also passed against that exported executable and its packed resources.
 
 The flow fixture deliberately raises damage to test all six days and both boss transitions quickly. It must not be interpreted as balance evidence. The optional input-driven probe uses normal attack, movement, dash, and special inputs with fixed sample builds:
 

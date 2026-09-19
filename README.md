@@ -17,6 +17,8 @@ godot --path .
 
 The automated workflow uses the [official Godot 4.5.1 release](https://github.com/godotengine/godot/releases/tag/4.5.1-stable). Local headless checks have also passed on Godot 4.7.2.
 
+For a standalone Windows build, install the matching Godot export templates, then use the included **Windows Desktop** preset or run `godot --headless --path . --export-release "Windows Desktop" export/Max.exe`. Keep `Max.exe` and `Max.pck` together. Include Godot's MIT license/third-party notices and `Assets/Fonts/OFL.txt` when distributing the build.
+
 ## Controls
 
 | Context | Input | Action |
