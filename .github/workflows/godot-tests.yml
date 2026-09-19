@@ -1,0 +1,41 @@
+name: Godot tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  headless-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GODOT_VERSION: 4.5.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download official Godot Standard
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          release="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          mkdir -p "$RUNNER_TEMP/godot"
+          curl --fail --location --retry 3 "$release/$archive" --output "$RUNNER_TEMP/godot/$archive"
+          curl --fail --location --retry 3 "$release/SHA512-SUMS.txt" --output "$RUNNER_TEMP/godot/SHA512-SUMS.txt"
+          cd "$RUNNER_TEMP/godot"
+          grep " $archive$" SHA512-SUMS.txt | sha512sum --check --strict
+          unzip -q "$archive"
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+          chmod +x godot
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+      - name: Import assets and scripts
+        run: godot --headless --editor --path . --import --quit
+      - name: Economy and persistence model
+        run: godot --headless --path . --script tests/model_test.gd
+      - name: Complete game flow
+        run: godot --headless --path . --script tests/game_flow_test.gd -- --test
+      - name: Combat and state machine smoke
+        run: godot --headless --path . --script src/combat/combat_smoke.gd

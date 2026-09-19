@@ -1,17 +1,17 @@
-# Godot-spezifisch
-.import/          # automatisch generierte Import-Dateien
-.godot/           # Cache / temporäre Editor-Dateien
-*.import          # einzelne Import-Dateien, falls welche liegen bleiben
+# Godot caches and generated import metadata
+.godot/
+.import/
+*.import
 
-# Betriebssystem-Dateien
-.DS_Store
-Thumbs.db
-
-# Editor / IDE
-.vscode/
-.idea/
-*.swp             # Swap-Dateien
-
-# Build / Exported files
+# Local exports, operating system and editor files
 export/
 bin/
+build/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.log
+__pycache__/
+*.pyc

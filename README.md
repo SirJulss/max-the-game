@@ -1,36 +1,69 @@
-# Max The Game
+# Max: Chat Has Hands
 
-**Max The Game** is a 2D roguelike streamer simulation with action-packed combat.  
-The goal is to help Max become the best streamer in the world.  
+A small 2D action roguelite about turning a tiny stream into a very large doorstep problem.
 
-He must manage his **basic needs** like hunger, hygiene, and sleep while fighting enemies, upgrading equipment, and reaching a daily view goal.  
-Combat is dynamic and offers **attack combos, sprinting, parrying, blocking**, and more. Using too much energy forces him to stop streaming early, making strategy essential.
+**Apartment → walk to the PC → play a stream from 08:00–16:00 → buy items → fight Haters outside → next morning.** Clear six days and defeat the Algorithm to win. Losing a fight ends the run; reaching day three unlocks two alternative starting styles.
 
----
+## Play
 
-## Project Structure
+Open `project.godot` in **Godot 4.5 or newer, Standard edition**, let the assets import, and press **F6** with `Scenes/Game/Main.tscn` open, or **F5** to run the project. The game is GDScript and does not require .NET. It uses the Compatibility renderer and a 1280×720 interface.
+
+From a terminal with Godot on `PATH`:
+
+```sh
+godot --editor --path . --import --quit
+godot --path .
 ```
-max-the-game/
-├── Assets/ # All graphics, audio, and font resources
-│ ├── Textures/ # Images, icons, textures
-│ ├── Sprites/ # Spritesheets or individual sprites
-│ ├── Audio/ # Sound effects and music
-│ ├── Fonts/ # Fonts used in the game
-│ └── Materials/ # Materials, shaders
-├── Scenes/ # All Godot scenes (.tscn)
-│ ├── Main.tscn
-│ ├── Levels/ # Level-specific scenes
-│ └── UI/ # UI scenes
-├── Scripts/ # All scripts (GDScript or C#)
-│ ├── Player/ # Player logic
-│ ├── Enemy/ # Enemy logic
-│ └── UI/ # Menus, HUD, interface
-├── ProjectSettings/ # Optional: project settings
-├── .gitignore # Ignored files like cache and import files
-├── project.godot # Main Godot project file
-└── README.md # This file
-```
----
 
-> **Note:** Empty folders like `Assets/` or `Scripts/` should contain a `.gitkeep` file so Git tracks them.  
-> The `.gitignore` ensures automatically generated Godot files like `.import` or `.godot` are not pushed to the repository.
+The automated workflow uses the [official Godot 4.5.1 release](https://github.com/godotengine/godot/releases/tag/4.5.1-stable). Local headless checks have also passed on Godot 4.7.2.
+
+## Controls
+
+| Context | Input | Action |
+| --- | --- | --- |
+| Apartment | WASD / arrow keys | Walk to the PC |
+| Apartment | E near the PC | Choose a game |
+| Stream | Space or the play button | Harvest, fire, or honk when the marker is inside the mint zone |
+| Shop | Mouse | Buy items, reroll stock, or switch owned weapons |
+| Combat | WASD / arrow keys | Move |
+| Combat | Mouse | Aim |
+| Combat | Hold left mouse / J | Attack and chain the weapon's combo |
+| Combat | Space / Shift | Dash with invulnerability |
+| Combat | Right mouse / K | Touch Grass pulse: knock enemies back and clear nearby bullets |
+| Global | Esc | Pause and access the main menu |
+| Global | M / F11 | Toggle audio / fullscreen |
+
+## What's in this version
+
+- Three short timing games inside the original PC artwork: Turnip Farm, Ranked Rush, and Goose Court.
+- A complete eight-hour stream takes **64 seconds**. Playing well earns viewers, hype, and tips; no narrative choices interrupt the game.
+- Viewer goals rise from **80 to 50,000**. Hitting the goal earns a bonus; the shift still finishes at 16:00. Missing it pays the donations you earned and also advances to the shop.
+- A stock keyboard, sweeping Banhammer, and ranged Caps Lock Cannon; purchased weapons can be swapped in the shop.
+- Eighteen shop items covering equipment, healing, weapons, combat stats, security, and stream/combat synergies. Shops show four items and offer increasingly expensive rerolls.
+- Three enemies made from the original NPC sprites: Tan fights up close, Louis throws beer bottles with area damage, and Julian uses a jetpack ground slam. Modzilla and the Algorithm appear on days three and six.
+- A complete start, win, loss, restart, pause, and checkpoint flow, with saved run records and starting-style unlocks.
+
+The game reuses the original project's Max animations, Player scene, state-machine foundation, music, streaming PC art, UI buttons, and NPC character artwork. See [design and asset notes](docs/DESIGN.md) for the implementation map.
+
+## Saves
+
+Progress is saved in the apartment/game selection, after a stream, after shop purchases/rerolls/loadout changes, and after clearing a yard. **Continue resumes the latest checkpoint**, including the current shop's stock and sold items. Leaving during a stream returns to that morning's apartment; leaving during a fight returns to the preceding shop. Win or loss clears the run checkpoint.
+
+Records and style unlocks are stored separately. The files are `user://run_v1.json` and `user://profile_v1.json`; use Godot's **Project → Open User Data Folder** to find them. Starting a new run replaces the previous checkpoint.
+
+## Test
+
+Import first on a fresh checkout, then run:
+
+```sh
+godot --headless --editor --path . --import --quit
+godot --headless --path . --script tests/model_test.gd
+godot --headless --path . --script tests/game_flow_test.gd -- --test
+godot --headless --path . --script src/combat/combat_smoke.gd
+```
+
+On Windows, `tools/test.ps1 -Godot 'C:\path\to\Godot_console.exe'` runs the same checks. The flow test requires `-- --test`, which disables game profile and checkpoint reads, writes, and deletions. The other tests instantiate the model or arena without persistence.
+
+The model suite checks economy, saves, and nine complete game/style combinations. The flow suite exercises the real UI/controller and arena signals, using deliberately high damage to make transitions deterministic. Combat smoke checks attack geometry, state-machine input, damage rules, enemy patterns, and encounter completion. These checks verify functionality; they do not establish human difficulty or visual quality. An optional input-driven combat probe is documented in [DESIGN.md](docs/DESIGN.md).
+
+This is a focused single-player desktop game: one apartment, one yard, six days. It has no network streaming integration, online multiplayer, procedural map generation, or controller support.
