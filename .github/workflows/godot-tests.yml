@@ -35,6 +35,14 @@ jobs:
         run: godot --headless --editor --path . --import --quit
       - name: Economy and persistence model
         run: godot --headless --path . --script tests/model_test.gd
+      - name: Minigame input and timing
+        run: godot --headless --path . --script tests/stream_stage_test.gd
+      - name: Chiptune sound effects
+        run: godot --headless --path . --script tests/audio_test.gd
+      - name: Imported Pixel Composer animations
+        run: godot --headless --path . --script tests/pixel_fx_test.gd
+      - name: Screen effects and camera
+        run: godot --headless --path . --script tests/screen_effects_test.gd
       - name: Complete game flow
         run: godot --headless --path . --script tests/game_flow_test.gd -- --test
       - name: Combat and state machine smoke

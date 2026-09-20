@@ -5,10 +5,12 @@ extends Node2D
 signal cleared(reward: int)
 signal defeated
 signal feedback(message: String)
+signal impact(strength: float)
 
 const PLAYER_SCENE := preload("res://Scenes/Levels/Player/Player.tscn")
 const HATER_SCRIPT := preload("res://src/combat/hater.gd")
 const EXPLOSION_TEXTURE := preload("res://Assets/test/image-removebg-preview.png")
+const FX := preload("res://src/presentation/pixel_fx.gd")
 var player: Player
 var active := false
 var kills := 0
@@ -37,6 +39,8 @@ var hit_count := 0
 var sfx: Dictionary = {}
 var sound_voices := 0
 var feedback_layer: Node2D
+var _impact_cooldown := 0.0
+var _impact_priority := 0.0
 
 func _ready() -> void:
 	player = PLAYER_SCENE.instantiate()
@@ -77,6 +81,8 @@ func start_encounter(round_day: int, stream_heat: float, build: Dictionary) -> v
 	reward_bank = 0
 	elapsed = 0
 	clear_timer = 0
+	_impact_cooldown = 0
+	_impact_priority = 0
 	spawn_timer = 0.6
 	turret_timer = 1.0
 	boss_name = ""
@@ -108,6 +114,9 @@ func set_active(value: bool) -> void:
 func _physics_process(delta: float) -> void:
 	if not active:
 		return
+	_impact_cooldown = maxf(0, _impact_cooldown - delta)
+	if _impact_cooldown <= 0:
+		_impact_priority = 0
 	elapsed += delta
 	spawn_timer -= delta
 	if spawn_timer <= 0 and not spawn_queue.is_empty():
@@ -174,14 +183,51 @@ func _process(delta: float) -> void:
 		if is_instance_valid(feedback_layer):
 			feedback_layer.queue_redraw()
 
-func spawn_enemy(type: String, spawn_position: Vector2) -> Node2D:
+func _safe_spawn_position(requested: Vector2, type: String) -> Vector2:
+	var inset := bounds.grow(-45)
+	var point := Vector2(clampf(requested.x, inset.position.x, inset.end.x), clampf(requested.y, inset.position.y, inset.end.y))
+	var spacing := 210.0 if type in ["modzilla", "algorithm"] else 140.0
+	if point.distance_to(player.position) >= spacing:
+		return point
+	# Preserve the intended entry when possible, but never drop an add onto Max.
+	var best := point
+	var best_score := INF
+	var candidates: Array[Vector2] = []
+	for index in 5:
+		var x := lerpf(inset.position.x, inset.end.x, index / 4.0)
+		candidates.append(Vector2(x, inset.position.y))
+		candidates.append(Vector2(x, inset.end.y))
+	candidates.append(Vector2(inset.position.x, inset.get_center().y))
+	candidates.append(Vector2(inset.end.x, inset.get_center().y))
+	# Boss summons originate inside the yard. Shift those only as far as safety
+	# requires, so melee builds are not forced to chase every add to a remote gate.
+	if inset.grow(-10).has_point(point):
+		var angle := (point - player.position).angle()
+		for index in 8:
+			var nearby := player.position + Vector2.RIGHT.rotated(angle + index * TAU / 8.0) * (spacing + 1)
+			nearby.x = clampf(nearby.x, inset.position.x, inset.end.x)
+			nearby.y = clampf(nearby.y, inset.position.y, inset.end.y)
+			candidates.append(nearby)
+	for candidate in candidates:
+		if candidate.distance_to(player.position) < spacing:
+			continue
+		var score := candidate.distance_to(point)
+		for other in enemies:
+			if is_instance_valid(other) and not other.dead:
+				score += maxf(0, 70 - candidate.distance_to(other.position))
+		if score < best_score:
+			best_score = score
+			best = candidate
+	return best
+
+func spawn_enemy(type: String, spawn_position: Vector2, ensure_safe: bool = true) -> Node2D:
 	var enemy: Node2D = HATER_SCRIPT.new()
 	add_child(enemy)
-	enemy.position = Vector2(clampf(spawn_position.x, 155, 1125), clampf(spawn_position.y, 350, 580))
+	enemy.position = _safe_spawn_position(spawn_position, type) if ensure_safe else spawn_position
 	enemy.setup(type, day, heat, self)
 	enemy.z_index = int(enemy.position.y)
 	enemies.append(enemy)
-	add_ring(enemy.position, enemy.radius + 20, enemy.tint, 0.5)
+	add_ring(enemy.position, enemy.radius + 20, enemy.tint, enemy.spawn_time)
 	if enemy.boss:
 		boss_name = enemy.display_name
 		boss_hp = enemy.hp
@@ -229,6 +275,7 @@ func _attack(direction: Vector2, weapon: String, combo_index: int) -> void:
 	play_sfx("hit" if landed else "swing")
 	if landed:
 		hit_count += 1
+		emit_impact(0.28 if weapon == "banhammer" else 0.18)
 
 func _special() -> void:
 	if not active:
@@ -251,6 +298,7 @@ func _dash() -> void:
 	burst(player.position, Color("68e8f0"), 7)
 
 func _player_hurt(amount: float, source: Vector2) -> void:
+	emit_impact(0.45)
 	damage_text(player.position + Vector2(-12, -65), "-" + str(int(ceil(amount))), Color("ff8495"))
 	burst(player.position, Color("ff8495"), 12)
 	play_sfx("hurt")
@@ -284,6 +332,7 @@ func enemy_died(enemy: Node2D) -> void:
 	burst(enemy.position, enemy.tint, 16 if enemy.boss else 10)
 	if enemy.boss:
 		add_explosion(enemy.position + Vector2(0, -55), 132)
+		emit_impact(1.0)
 		boss_hp = 0
 		boss_name = ""
 		feedback.emit("" + ("Modzilla has been temporarily unmodded." if enemy.kind == "modzilla" else "The algorithm recommends touching grass."))
@@ -310,6 +359,7 @@ func _update_projectiles(delta: float) -> void:
 				if closest.distance_to(enemy.position) < enemy.radius + 7:
 					projectile["hit"].append(enemy.get_instance_id())
 					enemy.take_hit(projectile["damage"], previous, 65)
+					emit_impact(0.10)
 					projectile["pierce"] -= 1
 					play_sfx("hit")
 					if projectile["pierce"] < 0:
@@ -330,6 +380,7 @@ func lob_bottle(from: Vector2, target: Vector2, damage: float, radius: float = 6
 	target.x = clampf(target.x, bounds.position.x + 24, bounds.end.x - 24)
 	target.y = clampf(target.y, bounds.position.y + 24, bounds.end.y - 24)
 	bottles.append({"from": from, "target": target, "elapsed": 0.0, "duration": 0.95, "damage": damage, "radius": radius})
+	play_sfx("bottle_throw")
 
 func _update_bottles(delta: float) -> void:
 	for index in range(bottles.size() - 1, -1, -1):
@@ -341,7 +392,7 @@ func _update_bottles(delta: float) -> void:
 			puddles.append({"position": bottle["target"], "radius": bottle["radius"], "life": 2.3, "damage": bottle["damage"] * 0.5, "next_hit": 0.7})
 			add_ring(bottle["target"], bottle["radius"], Color("f5d280"), 0.35)
 			burst(bottle["target"], Color("d7ddae"), 9)
-			play_sfx("hit")
+			play_sfx("bottle_break")
 			if player.position.distance_to(bottle["target"]) < bottle["radius"] + 12:
 				player.take_damage(bottle["damage"], bottle["target"])
 			if index < bottles.size():
@@ -425,44 +476,50 @@ func burst(at: Vector2, color: Color, count: int) -> void:
 func damage_text(at: Vector2, message: String, color: Color) -> void:
 	floating_text.append({"position": at, "message": message, "color": color, "life": 0.65})
 
+func emit_impact(strength: float) -> void:
+	var bounded := clampf(strength, 0, 1)
+	if bounded <= 0:
+		return
+	# A fan of projectiles or a cleave gets one readable impulse. A bigger event
+	# still breaks through immediately, so damage and boss deaths are never lost.
+	if _impact_cooldown > 0 and bounded <= _impact_priority:
+		return
+	_impact_priority = bounded
+	_impact_cooldown = 0.06
+	impact.emit(bounded)
+
 func _draw() -> void:
 	for puddle in puddles:
 		var at: Vector2 = puddle["position"]
 		var radius: float = puddle["radius"]
 		var fade: float = minf(1.0, puddle["life"] * 1.8)
-		draw_circle(at, radius, Color(0.85, 0.59, 0.22, 0.3 * fade))
-		draw_arc(at, radius, 0, TAU, 34, Color(1, 0.85, 0.46, 0.65 * fade), 2)
-		for index in 7:
-			var foam := at + Vector2.RIGHT.rotated(index * 2.39) * (radius * 0.55)
-			draw_circle(foam, 3 + sin(elapsed * 3 + index), Color(1, 0.93, 0.67, fade * 0.75))
+		FX.draw(self, "puddle", at, Vector2.ONE * radius * 2, fmod(elapsed * 0.8, 1.0), Color(1, 1, 1, fade))
+		FX.draw(self, "ring", at, Vector2.ONE * radius * 2, fmod(elapsed * 0.8, 1.0), Color(1, 0.85, 0.45, fade * 0.38))
 	for bottle in bottles:
 		var at: Vector2 = bottle["target"]
 		var fraction: float = bottle["elapsed"] / bottle["duration"]
-		draw_circle(at, bottle["radius"], Color(0.9, 0.65, 0.26, 0.12))
-		draw_arc(at, bottle["radius"], 0, TAU, 36, Color("f1d07e"), 2)
-		draw_arc(at, bottle["radius"] * fraction, 0, TAU, 28, Color("ffe9ac"), 2)
+		var extent := Vector2.ONE * float(bottle["radius"]) * 2
+		FX.draw(self, "disc", at, extent, fraction, Color(0.9, 0.65, 0.26, 0.12))
+		FX.draw(self, "ring", at, extent, fraction, Color("f1d07e"))
 	for wave in shockwaves:
 		var progress: float = wave["elapsed"] / wave["duration"]
 		var radius: float = lerpf(14, wave["radius"], progress)
 		var at: Vector2 = wave["position"]
-		draw_arc(at, radius, 0, TAU, 64, Color(1, 0.55, 0.24, 0.25 * (1 - progress)), 17)
-		draw_arc(at, radius, 0, TAU, 64, Color(1, 0.84, 0.53, 1 - progress * 0.5), 5)
+		# The imported ring stays centered exactly on the live collision radius.
+		FX.draw(self, "ring", at, Vector2.ONE * radius * 2, progress, Color(1, 0.84, 0.53, 1 - progress * 0.5))
 	for hazard in hazards:
 		var at: Vector2 = hazard["position"]
 		var radius: float = hazard["radius"]
 		var progress: float = 1 - hazard["remaining"] / hazard["maximum"]
-		draw_circle(at, radius, Color(0.8, 0.3, 1.0, 0.15 + progress * 0.15))
-		draw_arc(at, radius, 0, TAU, 42, Color("eb9bff"), 3)
-		draw_arc(at, radius * progress, 0, TAU, 36, Color("ffe0fa"), 2)
+		FX.draw(self, "disc", at, Vector2.ONE * radius * 2, progress, Color(0.8, 0.3, 1.0, 0.15 + progress * 0.15))
+		FX.draw(self, "ring", at, Vector2.ONE * radius * 2, progress, Color("eb9bff"))
 		draw_string(ThemeDB.fallback_font, at + Vector2(-21, 5), "AD!", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("ffe0fa"))
 	for projectile in projectiles:
 		var at: Vector2 = projectile["position"]
 		var direction: Vector2 = projectile["velocity"].normalized()
 		var color := Color("9cfff0") if projectile["friendly"] else Color("ff9eaa")
-		draw_line(at - direction * 18, at, Color(color, 0.4), 8)
-		draw_circle(at, 5 if projectile["friendly"] else 8, color)
-		if not projectile["friendly"]:
-			draw_string(ThemeDB.fallback_font, at + Vector2(-3, 4), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("3b263e"))
+		var extent := Vector2(24, 14) if projectile["friendly"] else Vector2(28, 20)
+		FX.draw(self, "projectile", at, extent, fmod(elapsed * 2, 1.0), color, direction.angle())
 	for effect in effects:
 		var fraction: float = effect["life"] / effect["maximum"]
 		var color: Color = effect["color"]
@@ -476,13 +533,12 @@ func _draw() -> void:
 				var region := Rect2((frame % 5) * 95, row * 119, 95, 119 if row == 0 else 118)
 				draw_texture_rect_region(EXPLOSION_TEXTURE, Rect2(at - Vector2(radius, radius * 1.25), Vector2(radius * 2, radius * 2.5)), region)
 			"ring":
-				draw_arc(at, radius * (1 - fraction * 0.55), 0, TAU, 40, color, 3 + fraction * 3)
+				FX.draw(self, "ring", at, Vector2.ONE * radius * 2, 1 - fraction, color)
 			"slash":
 				var angle: float = effect["angle"]
-				draw_arc(at, radius * (1.0 - fraction * 0.1), angle - 1.1, angle + 1.1, 26, color, 4 + fraction * 9)
-				draw_arc(at, radius * 0.65, angle - 0.9, angle + 0.9, 22, Color(color, color.a * 0.5), 4)
+				FX.draw(self, "slash", at, Vector2.ONE * radius * 2, 1 - fraction, color, angle)
 			"particle":
-				draw_rect(Rect2(at - Vector2.ONE * radius, Vector2.ONE * radius * 2), color)
+				FX.draw(self, "impact", at, Vector2.ONE * radius * 2, 1 - fraction, color)
 	if int(stats.get("security", 0)) > 0:
 		var at := Vector2(640, 319)
 		draw_circle(at, 19, Color("273746"))
@@ -494,12 +550,7 @@ func _draw_floating_text() -> void:
 	for bottle in bottles:
 		var fraction: float = bottle["elapsed"] / bottle["duration"]
 		var at: Vector2 = bottle["from"].lerp(bottle["target"], fraction) + Vector2(0, -sin(fraction * PI) * 110)
-		feedback_layer.draw_set_transform(at, fraction * TAU * 1.5)
-		feedback_layer.draw_rect(Rect2(-5, -10, 10, 22), Color("577840"))
-		feedback_layer.draw_rect(Rect2(-3, -18, 6, 10), Color("98be66"))
-		feedback_layer.draw_rect(Rect2(-5, -3, 10, 8), Color("f4d887"))
-		feedback_layer.draw_line(Vector2(-3, -18), Vector2(3, -18), Color("ede0b1"), 2)
-	feedback_layer.draw_set_transform(Vector2.ZERO)
+		FX.draw(feedback_layer, "bottle", at, Vector2.ONE * 38, fraction, Color.WHITE, fraction * TAU * 1.5)
 	for item in floating_text:
 		var color: Color = item["color"]
 		color.a = minf(1, item["life"] * 4)
@@ -507,31 +558,17 @@ func _draw_floating_text() -> void:
 		feedback_layer.draw_string(ThemeDB.fallback_font, item["position"], item["message"], HORIZONTAL_ALIGNMENT_LEFT, -1, 20, color)
 
 func _make_sounds() -> void:
-	var specs := {"hit": [180.0, 60.0, 0.075], "swing": [380.0, 130.0, 0.08], "shot": [780.0, 270.0, 0.08], "dash": [520.0, 90.0, 0.12], "hurt": [155.0, 45.0, 0.15], "kill": [410.0, 900.0, 0.12], "stomp": [90.0, 28.0, 0.25], "special": [190.0, 760.0, 0.3], "start": [280.0, 540.0, 0.18], "win": [440.0, 880.0, 0.35]}
-	for key in specs:
-		var spec: Array = specs[key]
-		var frames := int(22050 * float(spec[2]))
-		var data := PackedByteArray()
-		data.resize(frames * 2)
-		var phase := 0.0
-		for sample in frames:
-			var fraction := float(sample) / frames
-			phase += TAU * lerpf(spec[0], spec[1], fraction) / 22050.0
-			var envelope := sin(PI * fraction) * (1 - fraction)
-			var wave := sin(phase) * 0.78 + sin(phase * 2.01) * 0.22
-			data.encode_s16(sample * 2, int(wave * envelope * 8500))
-		var stream := AudioStreamWAV.new()
-		stream.format = AudioStreamWAV.FORMAT_16_BITS
-		stream.mix_rate = 22050
-		stream.data = data
-		sfx[key] = stream
+	var bank = preload("res://src/presentation/sound_bank.gd")
+	for key in ["hit", "swing", "shot", "dash", "hurt", "kill", "stomp", "special", "start", "win", "jet_launch", "slam", "bottle_throw", "bottle_break", "jetpack", "bottle"]:
+		# The combat mixer allows fourteen voices; leave space for simultaneous hits.
+		sfx[key] = bank.sound(key)
 
 func play_sfx(key: String) -> void:
 	if not sfx.has(key) or sound_voices >= 14:
 		return
 	var voice := AudioStreamPlayer.new()
 	voice.stream = sfx[key]
-	voice.volume_db = -9
+	voice.volume_db = -12.5
 	voice.pitch_scale = randf_range(0.94, 1.06)
 	add_child(voice)
 	sound_voices += 1

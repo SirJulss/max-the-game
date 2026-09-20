@@ -1,5 +1,5 @@
 extends Node
-## Reuses the project's music and supplies small, generated sound effects.
+## Reuses the project's music and plays imported chiptune WAV effects.
 
 const MUSIC := {
 	"title": "res://Assets/Sounds/Music/MaxLoop_Nostalgic_Keys.wav",
@@ -99,67 +99,4 @@ func _exit_tree() -> void:
 
 
 func _make_sound(sound: String) -> AudioStreamWAV:
-	var duration := 0.1
-	match sound:
-		"coin": duration = 0.26
-		"hit": duration = 0.17
-		"dash": duration = 0.19
-		"knock": duration = 0.43
-		"win": duration = 0.75
-		"lose": duration = 0.65
-		"clip": duration = 0.35
-	var rate := 22050
-	var samples := int(duration * rate)
-	var bytes := PackedByteArray()
-	bytes.resize(samples * 2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 714
-	var previous_noise := 0.0
-	var phase := 0.0
-	for sample in samples:
-		var t := float(sample) / float(rate)
-		var progress := t / duration
-		var envelope := minf(t * 400.0, 1.0) * pow(1.0 - progress, 2.0)
-		var hz := 700.0
-		var value := 0.0
-		var noise := rng.randf_range(-1.0, 1.0)
-		previous_noise = lerpf(previous_noise, noise, 0.2)
-		match sound:
-			"click":
-				hz = 820.0 - progress * 300.0
-				value = sin(TAU * t * hz) * 0.35
-			"coin":
-				hz = 988.0 if progress < 0.35 else 1318.5
-				phase += TAU * hz / rate
-				value = (sin(phase) + sin(phase * 2.0) * 0.2) * 0.45
-			"hit":
-				hz = 150.0 - progress * 85.0
-				phase += TAU * hz / rate
-				value = sin(phase) * 0.65 + previous_noise * 0.7
-			"dash":
-				value = previous_noise * 1.6 * sin(progress * PI)
-			"knock":
-				var knock_t := fmod(t, 0.19)
-				envelope = exp(-knock_t * 34.0) * minf(knock_t * 700.0, 1.0)
-				value = sin(knock_t * 150.0 * TAU) * 0.7 + previous_noise * 0.3
-			"win":
-				var notes := [523.25, 659.25, 783.99, 1046.5]
-				hz = notes[mini(int(progress * 4.0), 3)]
-				phase += TAU * hz / rate
-				value = sin(phase) * 0.5 + sin(phase * 2.0) * 0.15
-			"lose":
-				hz = 360.0 - progress * 240.0
-				phase += TAU * hz / rate
-				value = sin(phase) * 0.5 + sin(phase * 0.5) * 0.2
-			"clip":
-				hz = 600.0 + floor(progress * 5.0) * 140.0
-				phase += TAU * hz / rate
-				value = sin(phase) * 0.45
-		var pcm := int(clampf(value * envelope, -1.0, 1.0) * 32767.0)
-		bytes.encode_s16(sample * 2, pcm)
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = rate
-	stream.stereo = false
-	stream.data = bytes
-	return stream
+	return preload("res://src/presentation/sound_bank.gd").sound(sound)

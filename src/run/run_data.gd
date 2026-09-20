@@ -5,6 +5,8 @@ extends RefCounted
 
 const MAX_DAYS: int = 6
 const STREAM_LIMIT: float = 64.0
+const STREAK_STEP: int = 3
+const MAX_STREAK_BONUS: float = 0.30
 const GOALS: Array[int] = [80, 240, 900, 3200, 12000, 50000]
 const GAMES: Array[Dictionary] = [
 	{"id": "cozy", "name": "Turnip Tax Simulator", "ui_name": "Turnip Farm", "short_stats": "Steady viewers / low heat", "subtitle": "COZY / LOW HEAT", "description": "Grow a tiny farm. Explain vegetable tax fraud. Steady viewers, fewer Haters.", "viewer_rate": 2.25, "donation_rate": 1.25, "heat_rate": 0.32, "color": Color("76d9b0")},
@@ -66,6 +68,8 @@ var upgrades: Dictionary = {}
 var weapon: String = "keyboard"
 var clip_cooldown: float = 0.0
 var clips_hit: int = 0
+var clip_streak: int = 0
+var best_clip_streak: int = 0
 var loyalty_fans: int = 0
 var total_donations: int = 0
 var peak_viewers: int = 0
@@ -107,6 +111,8 @@ func _reset_stream() -> void:
 	stream_time = 0.0
 	clip_cooldown = 0.0
 	clips_hit = 0
+	clip_streak = 0
+	best_clip_streak = 0
 	current_event = {}
 	game_id = ""
 	game = {}
@@ -172,21 +178,30 @@ func choose_event(choice: int) -> String:
 func clip_ready() -> bool:
 	return phase == "stream" and current_event.is_empty() and clip_cooldown <= 0.0 and stream_time < STREAM_LIMIT
 
+func streak_multiplier() -> float:
+	return 1.0 + minf(MAX_STREAK_BONUS, floorf(float(clip_streak) / STREAK_STEP) * 0.10)
+
 func try_clip(value: float) -> String:
 	if not clip_ready() or not is_finite(value):
 		return ""
 	clip_cooldown = maxf(1.2, 1.65 - float(_count("clip_lab")) * 0.15)
 	if value >= 0.40 and value <= 0.60:
+		clip_streak += 1
+		best_clip_streak = maxi(best_clip_streak, clip_streak)
 		var clip_mult: float = 1.0 + float(_count("clip_lab")) * 0.40
-		var gain: int = maxi(1, roundi(goal * 0.018 * clip_mult))
-		var tips: int = maxi(1, roundi((1.0 + float(day - 1) * 0.3) * clip_mult * donation_multiplier()))
+		# Keep fractional bonus rewards: a day-one $1 action still benefits from
+		# a +10% streak without rounding away the reward or doubling its value.
+		var gain: float = float(maxi(1, roundi(goal * 0.018 * clip_mult))) * streak_multiplier()
+		var tips: float = float(maxi(1, roundi((1.0 + float(day - 1) * 0.3) * clip_mult * donation_multiplier()))) * streak_multiplier()
 		viewers += gain
 		stream_donations += tips
 		hype = minf(100.0, hype + 6.0)
 		heat = maxf(0.0, heat - 1.5)
 		clips_hit += 1
 		peak_viewers = maxi(peak_viewers, int(viewers))
-		return "CLEAN CLIP! +%d viewers / +$%d" % [gain, tips]
+		var streak_text: String = "  |  %d COMBO +%d%%" % [clip_streak, roundi((streak_multiplier() - 1.0) * 100.0)] if clip_streak >= STREAK_STEP else ""
+		return "CLEAN CLIP! +%d viewers / +$%.1f%s" % [roundi(gain), tips, streak_text]
+	clip_streak = 0
 	hype = maxf(0.0, hype - 5.0)
 	heat = minf(160.0, heat + 3.0)
 	return "Scuffed clip. Chat noticed. +3 heat"
@@ -382,6 +397,7 @@ func to_save() -> Dictionary:
 		"last_combat_reward": last_combat_reward, "viewers": viewers, "goal": goal,
 		"heat": heat, "hype": hype, "stream_donations": stream_donations,
 		"stream_time": stream_time, "game_id": game_id, "clips_hit": clips_hit,
+		"clip_streak": clip_streak, "best_clip_streak": best_clip_streak,
 		"offer_ids": _offer_ids.duplicate(), "shop_bought": _shop_bought.duplicate(true),
 		"rerolls": rerolls,
 		# JSON cannot preserve all 64 bits of RNG state in a numeric value.
@@ -414,6 +430,12 @@ func load_save(data: Dictionary) -> bool:
 	for key in ["donations", "loyalty_fans", "total_donations", "peak_viewers", "last_stream_income", "last_combat_reward", "clips_hit"]:
 		if not _valid_number(data.get(key), 0.0, 1000000.0) or float(data[key]) != floorf(float(data[key])):
 			return false
+	# Older checkpoints omit these optional presentation/reward-history fields.
+	for key in ["clip_streak", "best_clip_streak"]:
+		if not _valid_number(data.get(key, 0), 0.0, float(data["clips_hit"])) or float(data.get(key, 0)) != floorf(float(data.get(key, 0))):
+			return false
+	if int(data.get("clip_streak", 0)) > int(data.get("best_clip_streak", 0)):
+		return false
 	for key in ["viewers", "stream_donations"]:
 		if not _valid_number(data.get(key), 0.0, 1000000.0):
 			return false
@@ -461,6 +483,8 @@ func load_save(data: Dictionary) -> bool:
 		if definition["id"] == game_id:
 			game = definition.duplicate(true)
 	clips_hit = int(data["clips_hit"])
+	clip_streak = int(data.get("clip_streak", 0))
+	best_clip_streak = int(data.get("best_clip_streak", 0))
 	_offer_ids.assign(saved_offers)
 	_shop_bought = data["shop_bought"].duplicate(true)
 	rerolls = int(data.get("rerolls", 0))

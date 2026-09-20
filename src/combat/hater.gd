@@ -2,6 +2,7 @@ extends Node2D
 ## Enemies share damage/telegraph rules but have deliberately different spacing games.
 
 const MONITOR_TEXTURE := preload("res://Assets/Gameplay/Streaming/Pc/PCOverlay.png")
+const FX := preload("res://src/presentation/pixel_fx.gd")
 
 var arena: Node2D
 var kind := "heckler"
@@ -27,7 +28,8 @@ var knockback := Vector2.ZERO
 var age := 0.0
 var phase := 0
 var half_triggered := false
-var spawn_time := 0.45
+const SPAWN_DURATION := 0.7
+var spawn_time := SPAWN_DURATION
 var npc_sprite: Sprite2D
 var sprite_textures: Dictionary = {}
 var body_scale := 1.5
@@ -128,7 +130,9 @@ func _sync_sprite() -> void:
 	npc_sprite.position = Vector2(0, -28 * body_scale + floor(sin(age * 5) * 1.0) - flight_height)
 	# Keep the artist's colors intact; only the enlarged boss gets a subtle tint.
 	var accent := Color.WHITE.lerp(tint, 0.18) if boss else Color.WHITE
-	npc_sprite.modulate = Color(2.5, 2.5, 2.5) if flash > 0 else accent
+	npc_sprite.modulate = accent
+	if spawn_time > 0:
+		npc_sprite.modulate.a = 0.35 + 0.65 * (1.0 - spawn_time / SPAWN_DURATION)
 
 func tick(delta: float) -> void:
 	if dead:
@@ -157,7 +161,9 @@ func tick(delta: float) -> void:
 			cooldown = 2.3
 			arena.add_shockwave(position, 170, damage * 1.25, 0.65)
 			arena.burst(position, Color("ffd18a"), 12)
-			arena.play_sfx("stomp")
+			arena.add_explosion(position + Vector2(0, -18), 45)
+			arena.play_sfx("slam")
+			arena.emit_impact(0.65)
 		return
 	var to_player: Vector2 = arena.player.position - position
 	var distance := to_player.length()
@@ -234,8 +240,9 @@ func _resolve_attack() -> void:
 	var distance: float = position.distance_to(arena.player.position)
 	match attack_kind:
 		"swipe":
-			arena.add_ring(position + aim * 26, 34, Color("ff7187"), 0.22)
-			if distance < 66:
+			arena.add_ring(position + aim * 32, 30, Color("ff7187"), 0.22)
+			var offset: Vector2 = arena.player.position - position
+			if distance < 16 or (distance < 66 and offset.normalized().dot(aim) > 0.1):
 				arena.player.take_damage(damage, position)
 			cooldown = 1.05
 		"bottle":
@@ -247,7 +254,7 @@ func _resolve_attack() -> void:
 			flight_start = position
 			flight_remaining = flight_duration
 			knockback = Vector2.ZERO
-			arena.play_sfx("dash")
+			arena.play_sfx("jet_launch")
 		"charge":
 			charge_left = 0.58 if boss else 0.46
 			cooldown = 1.3
@@ -255,7 +262,9 @@ func _resolve_attack() -> void:
 			var size := 154.0 if boss else 100.0
 			arena.add_ring(position, size, Color("ff7f99"), 0.42)
 			arena.burst(position, tint, 14)
-			arena.play_sfx("stomp")
+			arena.add_explosion(position + Vector2(0, -20), 58)
+			arena.play_sfx("slam")
+			arena.emit_impact(0.65)
 			if distance < size + 12:
 				arena.player.take_damage(damage * 1.2, position)
 			cooldown = 1.8 if boss else 2.0
@@ -293,40 +302,52 @@ func take_hit(amount: float, from: Vector2, force: float = 150.0) -> void:
 		queue_free()
 
 func _draw() -> void:
-	var color := Color.WHITE if flash > 0 else tint
+	var color := tint
 	var bob := sin(age * 5.0) * 2.0
 	if is_airborne or (windup > 0 and attack_kind == "jetpack"):
 		var marker := flight_target - position
-		draw_circle(marker, 45, Color(1, 0.63, 0.25, 0.14))
-		draw_arc(marker, 45, 0, TAU, 32, Color("ffc574"), 3)
-		draw_line(marker - Vector2(17, 0), marker + Vector2(17, 0), Color("ffe9b4"), 2)
-		draw_line(marker - Vector2(0, 17), marker + Vector2(0, 17), Color("ffe9b4"), 2)
-		draw_arc(marker, 170, 0, TAU, 48, Color(1, 0.73, 0.4, 0.22), 2)
+		var progress := 1.0 - flight_remaining / flight_duration if is_airborne else 0.0
+		FX.draw(self, "disc", marker, Vector2.ONE * 90, progress, Color(1, 0.63, 0.25, 0.14))
+		FX.draw(self, "ring", marker, Vector2.ONE * 90, progress, Color("ffc574"))
+		FX.draw(self, "crosshair", marker, Vector2.ONE * 36, progress, Color("ffe9b4"))
+		FX.draw(self, "ring", marker, Vector2.ONE * 340, progress, Color(1, 0.73, 0.4, 0.22))
 	if spawn_time > 0:
-		draw_arc(Vector2.ZERO, radius + 10, 0, TAU, 24, Color(color, 0.6), 3)
+		var arriving := 1.0 - spawn_time / SPAWN_DURATION
+		var extent := Vector2.ONE * (radius + 15) * 2
+		FX.draw(self, "disc", Vector2.ZERO, extent, arriving, Color(color, 0.1))
+		FX.draw(self, "ring", Vector2.ZERO, extent, arriving, Color(color, 0.35))
 	if windup > 0:
 		var fraction := 1.0 - windup / maxf(0.01, windup_max)
 		var warning := Color(1, 0.35, 0.43, 0.2 + fraction * 0.25)
-		if attack_kind == "charge":
-			var end := aim * (285 if boss else 220)
-			var side := aim.orthogonal() * (radius + 8)
-			draw_colored_polygon(PackedVector2Array([-side, side, end + side, end - side]), warning)
-			draw_line(Vector2.ZERO, end, Color("ffb078"), 3)
+		if attack_kind == "swipe":
+			FX.draw(self, "swipe", Vector2.ZERO, Vector2.ONE * 132, fraction, Color("ffadbc"), aim.angle())
+			FX.draw(self, "disc", Vector2.ZERO, Vector2.ONE * 32, fraction, warning)
+		elif attack_kind == "charge":
+			var length := 285.0 if boss else 220.0
+			# The authored lane fills 38 of the nominal 96 vertical pixels.
+			# Compensate its padding so the warning covers the collision corridor.
+			var lane_width := (radius + 8) * 2 * FX.FOOTPRINT / 38.0
+			FX.draw(self, "charge", aim * length * 0.5, Vector2(length, lane_width), fraction, Color("ffb078"), aim.angle())
 		elif attack_kind == "stomp":
 			var size := 154.0 if boss else 100.0
-			draw_circle(Vector2.ZERO, size, warning)
-			draw_arc(Vector2.ZERO, size, 0, TAU, 48, Color("ff7f99"), 3)
-			draw_arc(Vector2.ZERO, size * fraction, 0, TAU, 40, Color("ffcb84"), 2)
+			FX.draw(self, "disc", Vector2.ZERO, Vector2.ONE * size * 2, fraction, warning)
+			FX.draw(self, "ring", Vector2.ZERO, Vector2.ONE * size * 2, fraction, Color("ff7f99"))
 		elif attack_kind == "bottle":
-			draw_line(Vector2.ZERO, aim * 290, warning, 3)
+			FX.draw(self, "charge", aim * 145, Vector2(290, 6), fraction, warning, aim.angle())
 		else:
-			draw_arc(Vector2.ZERO, radius + 15, -PI / 2, -PI / 2 + TAU * fraction, 28, Color("ffdb86"), 4)
-	draw_set_transform(Vector2(0, 5), 0, Vector2(1, 0.35))
-	draw_circle(Vector2.ZERO, radius + 4, Color(0.025, 0.018, 0.07, 0.45))
+			FX.draw(self, "ring", Vector2.ZERO, Vector2.ONE * (radius + 15) * 2, fraction, Color("ffdb86"))
+	FX.draw(self, "shadow", Vector2(0, 5), Vector2((radius + 4) * 2, (radius + 4) * 0.7), 0, Color(0.025, 0.018, 0.07, 0.45))
 	draw_set_transform(Vector2(0, bob))
+	if flash > 0:
+		var center := Vector2(0, -42 - flight_height)
+		var extent := Vector2(70, 105) * (body_scale / 1.5)
+		if kind == "algorithm":
+			center = Vector2(0, -65)
+			extent = Vector2(160, 105)
+		FX.draw(self, "halo", center, extent, 1 - flash / 0.09, Color.WHITE)
 	if kind == "algorithm":
 		# The final boss is the original streaming monitor, now looking back at Max.
-		draw_texture_rect_region(MONITOR_TEXTURE, Rect2(-70, -104, 140, 79), Rect2(0, 0, 320, 180), Color.WHITE if flash <= 0 else Color(2, 2, 2))
+		draw_texture_rect_region(MONITOR_TEXTURE, Rect2(-70, -104, 140, 79), Rect2(0, 0, 320, 180))
 		draw_circle(Vector2(0, -68), 20, Color("ed83bd"))
 		draw_circle(Vector2(aim.x * 8, -68 + aim.y * 6), 9, Color("fff5bc"))
 		draw_line(Vector2(-32, -24), Vector2(-43, -3), color, 4)
@@ -337,24 +358,21 @@ func _draw() -> void:
 		# Character bodies are the user's original Julian, Louis and Tan pixel art.
 		# Small equipment additions make attack roles readable without replacing it.
 		if kind == "reply":
-			draw_rect(Rect2(19, -49, 9, 22), Color("668744"))
-			draw_rect(Rect2(21, -56, 5, 9), Color("88ad5c"))
-			draw_rect(Rect2(19, -41, 9, 9), Color("f4d887"))
+			FX.draw(self, "bottle", Vector2(23, -42), Vector2.ONE * 34, 0)
 		elif kind == "ratio":
 			for side in [-1, 1]:
 				var pack := Vector2(side * 22, -53 - flight_height)
 				draw_rect(Rect2(pack - Vector2(6, 15), Vector2(12, 30)), Color("6f7c92"))
 				draw_rect(Rect2(pack - Vector2(3, 11), Vector2(6, 20)), Color("c1d4de"))
 				if is_airborne or (windup > 0 and attack_kind == "jetpack"):
-					var flame := 16 + absf(sin(age * 35)) * 17
-					draw_colored_polygon(PackedVector2Array([pack + Vector2(-5, 16), pack + Vector2(5, 16), pack + Vector2(0, 16 + flame)]), Color("ffa254"))
-					draw_line(pack + Vector2(0, 17), pack + Vector2(0, 23), Color("fff1a7"), 4)
+					# Pixel Composer's exported flame points toward local negative X.
+					FX.draw(self, "jet_flame", pack + Vector2(0, 34), Vector2(36, 20), fmod(age * 2, 1.0), Color("ffa254"), -PI / 2)
 		elif kind == "modzilla":
 			draw_line(Vector2(33, -18), Vector2(58, -92), Color("eed5a0"), 8)
 			draw_rect(Rect2(36, -110, 55, 29), Color("ffb874"))
 			draw_rect(Rect2(41, -105, 45, 19), Color("7d5653"))
 			draw_string(ThemeDB.fallback_font, Vector2(48, -91), "BAN", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("ffe1af"))
-		draw_arc(Vector2.ZERO, radius + 4, 0, TAU, 24, Color(tint, 0.5), 2)
+		FX.draw(self, "ring", Vector2.ZERO, Vector2.ONE * (radius + 4) * 2, 0, Color(tint, 0.5))
 	draw_set_transform(Vector2.ZERO)
 	if not boss:
 		var bar_y := -64 * body_scale - 7 - flight_height

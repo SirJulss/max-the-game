@@ -98,6 +98,7 @@ func _run_tests() -> void:
 			_check(game.run.day == expected_day + 1, "Reward leads to the following day")
 		await process_frame
 	_check(game.profile.wins == 1 and game.run_kills > 50 and game.total_banked > 300, "Full six-day victory updates results and meta progression")
+	_test_stream_inputs()
 	game.show_title()
 	game.begin_run()
 	game.show_setup()
@@ -124,6 +125,58 @@ func _run_tests() -> void:
 		print("GAME FLOW TESTS FAILED: %d of %d checks" % [failures.size(), checks])
 		quit(1)
 
+func _test_stream_inputs() -> void:
+	game.begin_run()
+	game.start_game("sweaty")
+	game.stage.set_process(false)
+	game.stage.marker = 0.0
+	var shot := InputEventMouseButton.new()
+	shot.button_index = MOUSE_BUTTON_LEFT
+	shot.pressed = true
+	shot.position = game.stage.get_global_transform_with_canvas() * game.stage.logical_to_local(game.stage._target_center(game.stage._target_index))
+	game._unhandled_input(shot)
+	_check(game.run.clips_hit == 1 and game.run.clip_streak == 1, "A viewport mouse click hits the scaled marked target independently of assist timing")
+	var viewers_before: float = game.run.viewers
+	game._unhandled_input(shot)
+	_check(game.run.viewers == viewers_before and game.run.clip_streak == 1, "Repeated mouse events during recovery cannot farm or break a combo")
+	for tick in 20:
+		game._process(0.1)
+		game.stage._process(0.1)
+	shot.position = Vector2(20, 300)
+	game._unhandled_input(shot)
+	_check(game.run.clip_ready() and game.run.clip_streak == 1, "Clicking outside the monitor is ignored without a miss penalty")
+	game._toggle_pause()
+	shot.position = game.stage.get_global_transform_with_canvas() * game.stage.logical_to_local(game.stage._target_center(game.stage._target_index))
+	game._unhandled_input(shot)
+	_check(game.run.clip_streak == 1, "Paused stream input cannot award a hit")
+	game._toggle_pause()
+	game.begin_run()
+	game.start_game("weird")
+	game.stage.set_process(false)
+	var verdict := InputEventKey.new()
+	verdict.pressed = true
+	verdict.keycode = KEY_A if game.stage.court_answer == "left" else KEY_D
+	game._unhandled_input(verdict)
+	_check(game.run.clip_streak == 1 and not game.stage.court_active, "Court directional keys resolve a case and award its streak exactly once")
+	game._unhandled_input(verdict)
+	_check(game.run.clips_hit == 1, "Repeated verdict input cannot answer a closed case")
+	for tick in 20:
+		game._process(0.1)
+		game.stage._process(0.1)
+	var case_time: float = game.stage.court_time_left
+	game._toggle_pause()
+	game.stage._process(20.0)
+	game._process(20.0)
+	_check(game.stage.court_time_left == case_time and game.run.clip_streak == 1, "Pause freezes an unanswered court case without a hidden miss")
+	game._toggle_pause()
+	var heat_before: float = game.run.heat
+	for tick in 30:
+		game.stage._process(0.1)
+	_check(game.run.clip_streak == 0 and is_equal_approx(game.run.heat, heat_before + 3), "An expired case emits one real model miss and resets the combo")
+	game.stage._process(0.2)
+	_check(is_equal_approx(game.run.heat, heat_before + 3), "Expired case recovery cannot repeatedly charge the same miss")
+	_check(game.labels["combo"].text.begins_with("COMBO 0"), "The compact HUD reflects the expired combo")
+
 func _finish_stream() -> void:
 	for i in 1400:
 		if game.phase == "shop":
@@ -134,8 +187,15 @@ func _finish_stream() -> void:
 		if game.run.clip_ready():
 			game.stage.marker = 0.5
 			game.stage.cooldown = 0.0
-			game.clip_moment()
+			if game.run.game_id == "weird":
+				game._stream_action(game.stage.court_answer)
+			elif game.run.game_id == "sweaty":
+				game._stream_action("click", game.stage.logical_to_local(game.stage._target_center(game.stage._target_index)))
+			else:
+				game.clip_moment()
 		game._process(0.1)
+		if game.phase == "stream":
+			game.stage._process(0.1)
 	_check(false, "Streaming did not reach the shop in bounded time")
 
 func _clear_encounter() -> void:

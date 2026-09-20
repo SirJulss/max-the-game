@@ -5,6 +5,7 @@ const Backdrop = preload("res://src/presentation/world_backdrop.gd")
 const Sound = preload("res://src/presentation/audio_bus.gd")
 const Arena = preload("res://src/combat/combat_arena.gd")
 const Stage = preload("res://src/ui/stream_stage.gd")
+const ScreenEffects = preload("res://src/presentation/screen_effects.gd")
 const BG := Color("111624")
 const PANEL := Color("1b2235")
 const BORDER := Color("35415b")
@@ -53,6 +54,8 @@ var total_banked := 0
 var music_button: Button
 var persistence_enabled := not "--test" in OS.get_cmdline_user_args()
 var apartment_player: Player
+var screen_fx: Node
+var effects_enabled := true
 
 func _ready() -> void:
 	ThemeDB.fallback_font = UI_FONT
@@ -72,7 +75,12 @@ func _ready() -> void:
 	apartment_player.allow_combat = false
 	add_child(apartment_player)
 	apartment_player.visible = false
+	screen_fx = ScreenEffects.new()
+	add_child(screen_fx)
+	screen_fx.set_enabled(effects_enabled)
+	arena.impact.connect(_combat_impact)
 	var canvas := CanvasLayer.new()
+	canvas.layer = 1
 	add_child(canvas)
 	ui = Control.new()
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -153,8 +161,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif not paused and phase == "stream":
 			if event.keycode == KEY_SPACE:
 				clip_moment()
+			elif event.keycode in [KEY_A, KEY_LEFT]:
+				_stream_action("left")
+			elif event.keycode in [KEY_D, KEY_RIGHT]:
+				_stream_action("right")
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not paused and phase == "stream" and is_instance_valid(stage):
+			_stream_action("click", stage.get_global_transform_with_canvas().affine_inverse() * event.position)
 
 func _clear_ui() -> void:
+	screen_fx.reset()
 	for child in ui.get_children():
 		ui.remove_child(child)
 		child.queue_free()
@@ -251,7 +267,8 @@ func show_setup() -> void:
 		var x := 56.0 + i * 398
 		_panel(ui, Rect2(x, 266, 376, 251), Color("11181d"), accents[i])
 		_label(ui, str(game.get("ui_name", game.name)).to_upper(), Rect2(x + 22, 294, 334, 54), 31, TEXT)
-		_label(ui, game.get("short_stats", game.subtitle), Rect2(x + 22, 367, 330, 60), 23, accents[i])
+		_label(ui, game.get("short_stats", game.subtitle), Rect2(x + 22, 355, 330, 60), 23, accents[i])
+		_label(ui, {"cozy": "TIMING / SPACE", "sweaty": "AIM / MOUSE", "weird": "VERDICT / A + D"}.get(game.id, ""), Rect2(x + 22, 422, 330, 24), 17, DIM)
 		_button(ui, "PLAY", Rect2(x + 20, 452, 336, 43), start_game.bind(game.id), accents[i])
 	_button(ui, "BACK", Rect2(490, 554, 300, 44), show_apartment, PANEL)
 	_save_checkpoint()
@@ -277,6 +294,7 @@ func start_game(id: String) -> void:
 	stage.size = Vector2(850, 478)
 	stage.game_id = run.game_id
 	ui.add_child(stage)
+	stage.timed_out.connect(_stream_timeout)
 	_panel(ui, Rect2(935, 144, 297, 478), Color("11181d"), BORDER)
 	labels["timer"] = _label(ui, "08:00", Rect2(962, 160, 248, 60), 48, TEXT)
 	_label(ui, "VIEWERS", Rect2(962, 237, 242, 25), 22, DIM)
@@ -287,8 +305,9 @@ func start_game(id: String) -> void:
 	labels["donations"] = _label(ui, "$0", Rect2(958, 425, 249, 42), 38, GOLD)
 	labels["heat"] = _label(ui, "HEAT  0", Rect2(963, 499, 243, 28), 22, PINK)
 	bars["heat"] = _bar(ui, Rect2(963, 537, 243, 8), PINK)
-	labels["hype"] = _label(ui, "HYPE  20%", Rect2(963, 565, 243, 31), 20, PURPLE)
-	clip_button = _button(ui, "SPACE / PLAY", Rect2(232, 637, 474, 41), clip_moment, MINT)
+	labels["combo"] = _label(ui, "COMBO 0", Rect2(963, 565, 243, 31), 20, PURPLE)
+	if run.game_id != "weird":
+		clip_button = _button(ui, "SPACE / PLAY", Rect2(232, 637, 474, 41), clip_moment, MINT)
 	_label(ui, str(run.game.get("ui_name", run.game.name)).to_upper(), Rect2(62, 108, 835, 30), 22, TEXT)
 	_update_stream()
 	sound.sfx("click")
@@ -300,25 +319,41 @@ func _update_stream() -> void:
 	bars["viewers"].value = run.viewers / run.goal * 100.0
 	labels["goal"].text = ("GOAL HIT" if run.viewers >= run.goal else "GOAL  " + _number(run.goal))
 	labels["donations"].text = "$%d" % int(run.stream_donations)
-	labels["hype"].text = "HYPE  %d%%" % int(run.hype)
+	labels["combo"].text = "COMBO %d  +%d%%" % [run.clip_streak, roundi((run.streak_multiplier() - 1.0) * 100)]
 	labels["heat"].text = "HEAT  %d" % int(run.heat)
 	bars["heat"].value = run.heat / 160.0 * 100.0
 	stage.frozen = false
 	stage.cooldown = run.clip_cooldown
-	clip_button.disabled = not run.clip_ready()
-	var action: String = {"cozy": "HARVEST", "sweaty": "FIRE", "weird": "HONK"}.get(run.game_id, "PLAY")
-	clip_button.text = "SPACE / " + action if run.clip_ready() else "..."
+	if is_instance_valid(clip_button):
+		clip_button.disabled = not run.clip_ready()
+		clip_button.text = stage.primary_label() if run.clip_ready() else "..."
+	for button in choice_buttons:
+		button.disabled = not run.clip_ready()
 
 func clip_moment() -> void:
+	_stream_action("primary")
+
+func _stream_action(action: String, local_position: Vector2 = Vector2.ZERO) -> void:
 	if phase != "stream" or paused or not run.current_event.is_empty() or not run.clip_ready():
 		return
-	var value: float = stage.clip()
+	var value: float = stage.resolve_action(action, local_position)
 	if value < 0:
 		return
+	_record_stream_action(value)
+
+func _stream_timeout() -> void:
+	if phase == "stream" and not paused and run.clip_ready():
+		_record_stream_action(0.0)
+
+func _record_stream_action(value: float) -> void:
+	var viewers_before: float = run.viewers
+	var tips_before: float = run.stream_donations
 	var result: String = run.try_clip(value)
-	stage.play_action_feedback(value >= 0.4 and value <= 0.6)
-	_toast(result.replace("CLEAN CLIP!", "NICE!").replace("Scuffed clip. Chat noticed.", "MISS"), MINT if value >= 0.4 and value <= 0.6 else GOLD)
-	sound.sfx("clip" if value >= 0.4 and value <= 0.6 else "click")
+	if result.is_empty():
+		return
+	var success := value >= 0.4 and value <= 0.6
+	_toast("+%d VIEWERS  +$%.1f" % [roundi(run.viewers - viewers_before), run.stream_donations - tips_before] if success else "MISS  /  +3 HEAT", MINT if success else GOLD)
+	sound.sfx("clip" if success else "click")
 	_update_stream()
 
 func choose_event(choice: int) -> void:
@@ -449,6 +484,10 @@ func _combat_feedback(message: String) -> void:
 	if phase == "combat" and ("ENRAGED" in message or "MODZILLA" in message or "ALGORITHM" in message):
 		_toast(message.split("•")[0].strip_edges(), GOLD)
 
+func _combat_impact(strength: float) -> void:
+	if phase == "combat" and not paused:
+		screen_fx.impulse(strength)
+
 func _combat_cleared(reward: int) -> void:
 	if phase != "combat":
 		return
@@ -556,6 +595,8 @@ func _toggle_pause() -> void:
 	if phase == "title":
 		return
 	paused = not paused
+	screen_fx.reset()
+	screen_fx.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
 	arena.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
 	apartment_player.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
 	if is_instance_valid(stage):
@@ -569,18 +610,36 @@ func _toggle_pause() -> void:
 	shade.size = Vector2(1280, 720)
 	shade.color = Color(0.025, 0.035, 0.07, 0.86)
 	overlay.add_child(shade)
-	_panel(overlay, Rect2(417, 175, 446, 368), PANEL, PURPLE)
-	_label(overlay, "BRB. TOUCHING GRASS.", Rect2(449, 206, 398, 43), 25, TEXT)
-	_label(overlay, "WASD / arrows  ·  Move\nMouse / LMB or J  ·  Aim / attack\nSpace / Shift  ·  Invulnerable dash\nRMB / K  ·  Touch Grass pulse\nF11  ·  Fullscreen     M  ·  Audio", Rect2(450, 266, 386, 119), 17, DIM)
-	_button(overlay, "BACK TO THE CHAOS", Rect2(450, 408, 380, 47), _toggle_pause, MINT)
-	_button(overlay, "MENU  /  KEEP CHECKPOINT", Rect2(450, 471, 380, 39), func(): _toggle_pause(); show_title(), PANEL)
+	_panel(overlay, Rect2(417, 141, 446, 449), PANEL, PURPLE)
+	_label(overlay, "BRB. TOUCHING GRASS.", Rect2(449, 166, 398, 43), 25, TEXT)
+	var controls := "WASD / arrows  ·  Move\nMouse / LMB or J  ·  Aim / attack\nSpace / Shift  ·  Dash\nRMB / K  ·  Touch Grass pulse"
+	if phase == "apartment":
+		controls = "WASD / arrows  ·  Move\nE near the PC  ·  Play"
+	elif phase == "stream":
+		controls = {"cozy": "SPACE  ·  Harvest in the green", "sweaty": "LMB  ·  Click the pink target\nSPACE in green  ·  Aim assist", "weird": "Flower  ·  A / FREE\nStolen bread  ·  D / BONK\nLeft / right arrows also work"}.get(run.game_id, "")
+	elif phase == "shop":
+		controls = "Click an item  ·  Buy\nREROLL  ·  New items\nClick a weapon  ·  Equip\nNEXT  ·  Answer the door"
+	_label(overlay, controls + "\n\nF11  ·  Fullscreen     M  ·  Audio", Rect2(450, 223, 386, 140), 17, DIM)
+	var fx_button := _button(overlay, "", Rect2(450, 372, 380, 32), _toggle_effects, PANEL)
+	fx_button.name = "EffectsToggle"
+	fx_button.text = "SHAKE + BLOOM / " + ("ON" if effects_enabled else "OFF")
+	_button(overlay, "BACK TO THE CHAOS", Rect2(450, 420, 380, 47), _toggle_pause, MINT)
+	_button(overlay, "MENU  /  KEEP CHECKPOINT", Rect2(450, 484, 380, 39), func(): _toggle_pause(); show_title(), PANEL)
+
+func _toggle_effects() -> void:
+	effects_enabled = not effects_enabled
+	screen_fx.set_enabled(effects_enabled)
+	var toggle := overlay.get_node_or_null("EffectsToggle") as Button
+	if toggle:
+		toggle.text = "SHAKE + BLOOM / " + ("ON" if effects_enabled else "OFF")
+	_save_profile()
 
 func _show_help() -> void:
 	_clear_ui()
 	phase = "help"
 	_panel(ui, Rect2(272, 110, 736, 500), Color("101619"), BORDER)
 	_label(ui, "HOW TO PLAY", Rect2(309, 139, 660, 54), 42, TEXT)
-	_label(ui, "MORNING    WASD to PC. E to play.\nSTREAM       SPACE when the bar turns green.\n                       08:00 - 16:00. 64 seconds.\nSHOP           Buy items. Reroll. Equip weapons.\nFIGHT          WASD + mouse. Hold LMB.\n                       SPACE dodge. RMB pulse.\n\n6 days. 2 bosses. One run.", Rect2(310, 215, 660, 273), 25, DIM)
+	_label(ui, "MORNING    WASD to PC. E to play.\nSTREAM       Harvest. Aim. Judge geese.\n                       08:00 - 16:00. 64 seconds.\nSHOP           Buy items. Reroll. Equip weapons.\nFIGHT          WASD + mouse. Hold LMB.\n                       SPACE dodge. RMB pulse.\n\n6 days. 2 bosses. One run.", Rect2(310, 215, 660, 273), 25, DIM)
 	_button(ui, "OK", Rect2(310, 526, 660, 46), show_title, MINT)
 
 func _equipment_level() -> int:
@@ -728,11 +787,14 @@ func _write_json(path: String, data: Dictionary) -> void:
 
 func _load_profile() -> void:
 	var saved := _read_json(PROFILE_PATH)
+	effects_enabled = bool(saved.get("effects_enabled", true))
 	for key in profile:
 		profile[key] = maxi(0, int(saved.get(key, 0)))
 
 func _save_profile() -> void:
-	_write_json(PROFILE_PATH, profile)
+	var saved := profile.duplicate()
+	saved["effects_enabled"] = effects_enabled
+	_write_json(PROFILE_PATH, saved)
 
 func _save_checkpoint() -> void:
 	var data: Dictionary = run.to_save()

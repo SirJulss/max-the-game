@@ -2,6 +2,7 @@
 .godot/
 .import/
 *.import
+!Assets/Sounds/FX/*.wav.import
 
 # Local exports, operating system and editor files
 export/

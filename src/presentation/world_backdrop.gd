@@ -1,6 +1,8 @@
 extends Node2D
-## A tiny midnight suburb. All scenery is drawn locally, so gameplay never waits on art.
+## Original sprites and street art in a geometric suburb, lit by imported
+## Pixel Composer effects. Runtime code only positions and plays their frames.
 
+const FX := preload("res://src/presentation/pixel_fx.gd")
 const INK := Color("101322")
 const DEEP := Color("151a2e")
 const VIOLET := Color("8c6cf4")
@@ -72,8 +74,7 @@ func _sky() -> void:
 	for star in 44:
 		var x := float((star * 137 + 43) % 1260)
 		var y := float((star * 61 + 31) % 247)
-		var alpha := 0.14 + 0.13 * (sin(_clock * 0.7 + float(star)) + 1.0)
-		_box(x, y, 2, 2, Color(0.72, 0.77, 0.98, alpha))
+		FX.draw(self, "halo", Vector2(x + 1, y + 1), Vector2.ONE * 3, fmod(_clock * 0.09 + star * 0.137, 1.0), Color(0.72, 0.77, 0.98, 0.4))
 	# Distant, very ordinary buildings. The internet is considerably less ordinary.
 	for block in 16:
 		var height := float(45 + (block * 31) % 90)
@@ -84,7 +85,7 @@ func _sky() -> void:
 			if (block + window) % 3 != 0:
 				_box(x + 12 + window * 18, 305 - height, 7, 10, Color("3e3747"))
 	# Soft moon, kept out of UI reading lanes.
-	draw_circle(Vector2(1120, 150), 33, Color(0.50, 0.58, 0.85, 0.035))
+	FX.draw(self, "halo", Vector2(1120, 150), Vector2.ONE * 66, fmod(_clock * 0.06, 1.0), Color(0.50, 0.58, 0.85, 0.09))
 	draw_circle(Vector2(1120, 150), 24, Color("717799"))
 	draw_circle(Vector2(1129, 142), 22, Color("1b1c33"))
 
@@ -121,9 +122,7 @@ func _title_studio() -> void:
 	_box(437, 477, 18, 56, Color("202337"))
 	_desk(Vector2(236, 412), 291, 1, true)
 	# Existing Max pixels, presented as the hero rather than discarded.
-	draw_set_transform(Vector2(323, 465), 0.0, Vector2(1.0, 0.34))
-	draw_circle(Vector2.ZERO, 48, Color(0.02, 0.04, 0.08, 0.55))
-	draw_set_transform(Vector2.ZERO)
+	FX.draw(self, "shadow", Vector2(323, 465), Vector2(96, 33), 0.0, Color(0.02, 0.04, 0.08, 0.55))
 	var frame := int(_clock * 2.0) % 2
 	draw_texture_rect_region(MAX_SPRITE, Rect2(240, 307, 96, 192), Rect2(frame * 32, 0, 32, 64))
 	# Exposed edges and cable provide depth without turning the scene into clutter.
@@ -137,7 +136,7 @@ func _title_studio() -> void:
 	# Small ambient motes above the room.
 	for mote in 7:
 		var p := Vector2(113 + mote * 66, 141 + sin(_clock * 0.5 + mote) * 6)
-		_box(p.x, p.y, 3, 3, Color(0.58, 0.45, 0.94, 0.3))
+		FX.draw(self, "halo", p, Vector2.ONE * 6, fmod(_clock * 0.14 + mote * 0.17, 1.0), Color(0.58, 0.45, 0.94, 0.3))
 
 
 func _studio() -> void:
@@ -167,7 +166,7 @@ func _studio() -> void:
 		_box(x + 4, 622, 17, 2, Color("364055"))
 		_box(x + 4, 628, 17, 2, Color("364055"))
 	# Gentle screen glow on the floor, low contrast for readability.
-	_box(83, 609, 750, 8, Color(0.51, 0.39, 0.93, 0.11 + 0.02 * sin(_clock)))
+	FX.draw(self, "halo", Vector2(458, 613), Vector2(750, 26), fmod(_clock * 0.12, 1.0), Color(0.51, 0.39, 0.93, 0.18))
 
 
 func _apartment() -> void:
@@ -199,7 +198,7 @@ func _apartment() -> void:
 	_box(776, 279, 257, 12, Color("a38487"))
 	_box(778, 129, 24, 148, Color("82657e"))
 	_box(1008, 129, 24, 148, Color("82657e"))
-	draw_colored_polygon(PackedVector2Array([Vector2(798, 315), Vector2(1009, 315), Vector2(1130, 603), Vector2(919, 603)]), Color(1.0, 0.84, 0.54, 0.065))
+	FX.draw(self, "halo", Vector2(964, 457), Vector2(260, 350), fmod(_clock * 0.07, 1.0), Color(1.0, 0.84, 0.54, 0.14), -0.35)
 	# Max's own monitor artwork, with the tiny setup growing as the run develops.
 	_neon_sign(Vector2(159, 130), "MAX // LIVE", 211)
 	_desk(Vector2(153, 285), 338, equipment, true)
@@ -288,8 +287,7 @@ func _yard() -> void:
 		_label("MODERATED WITH FORCE", Vector2(155, 267), 13, Color("97aaa9"))
 	if door_alert:
 		var pulse := 0.45 + 0.3 * sin(_clock * 8.0)
-		draw_arc(Vector2(640, 250), 34, PI * 1.12, PI * 1.9, 18, Color(1.0, 0.81, 0.52, pulse), 3)
-		draw_arc(Vector2(640, 250), 43, PI * 1.15, PI * 1.86, 18, Color(1.0, 0.81, 0.52, pulse * 0.5), 3)
+		FX.draw(self, "slash", Vector2(640, 250), Vector2.ONE * 86, fmod(_clock * 1.6, 1.0), Color(1.0, 0.81, 0.52, pulse), -PI * 0.5)
 		_label("KNOCK KNOCK", Vector2(579, 171), 16, GOLD)
 	# HUD text remains legible while the original street is still visible beneath it.
 	_box(0, 648, 1280, 72, Color(0.04, 0.07, 0.12, 0.48))
@@ -349,7 +347,7 @@ func _window(at: Vector2, size: Vector2, warm: bool) -> void:
 
 
 func _neon_sign(at: Vector2, text: String, width: float) -> void:
-	draw_rect(Rect2(at - Vector2(5, 5), Vector2(width + 10, 48)), Color(0.56, 0.40, 0.98, 0.07))
+	FX.draw(self, "halo", at + Vector2(width * 0.5, 19), Vector2(width + 40, 78), fmod(_clock * 0.14, 1.0), Color(0.56, 0.40, 0.98, 0.18))
 	draw_rect(Rect2(at, Vector2(width, 38)), Color("151d30"))
 	draw_rect(Rect2(at, Vector2(width, 38)), Color("7354b0"), false, 2)
 	_label(text, at + Vector2(13, 27), 23, Color("d0a9ff"))
@@ -416,8 +414,7 @@ func _fence_bottom() -> void:
 
 
 func _lamp(at: Vector2) -> void:
-	draw_circle(at, 34, Color(1.0, 0.78, 0.43, 0.035))
-	draw_circle(at, 22, Color(1.0, 0.78, 0.43, 0.06))
+	FX.draw(self, "halo", at + Vector2(0, -44), Vector2.ONE * 78, fmod(_clock * 0.11 + at.x * 0.001, 1.0), Color(1.0, 0.78, 0.43, 0.18))
 	_box(at.x - 3, at.y - 35, 6, 41, Color("343848"))
 	_box(at.x - 11, at.y - 55, 22, 22, Color("20293b"))
 	_box(at.x - 7, at.y - 51, 14, 14, GOLD)

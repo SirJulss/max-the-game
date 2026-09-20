@@ -7,6 +7,8 @@ var failures: Array[String] = []
 
 func _initialize() -> void:
 	_test_state_and_shift()
+	_test_mastery_streak()
+	_test_active_vs_idle()
 	_test_shop_and_stats()
 	_test_overtime_and_loss()
 	_test_save_roundtrip()
@@ -116,6 +118,71 @@ func _test_shop_and_stats() -> void:
 	run.reset_run("cozy")
 	_check(run.combat_stats()["armor"] == 1 and is_equal_approx(run.combat_stats()["damage"], 0.88) and run.viewer_multiplier() == 1.15, "Comfort sidegrade trades damage for growth and armor")
 
+func _test_mastery_streak() -> void:
+	var run = RunModel.new()
+	run.begin_stream("cozy")
+	var base_viewers: float = 0.0
+	var base_tips: float = 0.0
+	var capped_viewers: float = 0.0
+	var capped_tips: float = 0.0
+	for hit in range(1, 13):
+		while not run.clip_ready():
+			run.tick_stream(0.1)
+		var before_viewers: float = run.viewers
+		var before_tips: float = run.stream_donations
+		var feedback: String = run.try_clip(0.5)
+		var gained_viewers: float = run.viewers - before_viewers
+		var gained_tips: float = run.stream_donations - before_tips
+		if hit == 1:
+			base_viewers = gained_viewers
+			base_tips = gained_tips
+		elif hit == 3:
+			_check(is_equal_approx(gained_viewers, base_viewers * 1.10) and is_equal_approx(gained_tips, base_tips * 1.10), "Three consecutive successes award a real10% viewer and tip bonus, including fractional day-one tips")
+			_check(feedback.contains("3 COMBO +10%"), "Feedback exposes the earned streak bonus")
+		elif hit == 6:
+			_check(is_equal_approx(gained_viewers, base_viewers * 1.20) and is_equal_approx(gained_tips, base_tips * 1.20), "Six successes raise the action reward bonus to20%")
+		elif hit == 9:
+			capped_viewers = gained_viewers
+			capped_tips = gained_tips
+			_check(is_equal_approx(gained_viewers, base_viewers * 1.30) and is_equal_approx(gained_tips, base_tips * 1.30), "Nine successes reach the30% reward cap")
+		elif hit == 12:
+			_check(is_equal_approx(gained_viewers, capped_viewers) and is_equal_approx(gained_tips, capped_tips), "Long streaks do not exceed the reward cap")
+	_check(run.clip_streak == 12 and run.best_clip_streak == 12 and run.clips_hit == 12, "Current streak, best streak, and successful actions remain distinct counters")
+	var view_snapshot: float = run.viewers
+	var tip_snapshot: float = run.stream_donations
+	for ignored in 100:
+		run.try_clip(0.5 if ignored % 2 == 0 else 0.0)
+	_check(run.clip_streak == 12 and run.best_clip_streak == 12 and run.viewers == view_snapshot and run.stream_donations == tip_snapshot, "Spam during cooldown cannot farm rewards or destroy the streak")
+	while not run.clip_ready():
+		run.tick_stream(0.1)
+	_check(run.try_clip(NAN).is_empty() and run.clip_streak == 12 and run.clip_ready(), "Invalid quality does not spend a ready action or alter mastery state")
+	run.try_clip(0.0)
+	_check(run.clip_streak == 0 and run.best_clip_streak == 12 and run.clips_hit == 12 and is_equal_approx(run.streak_multiplier(), 1.0), "A genuine miss resets the bonus while preserving the best streak")
+	while not run.clip_ready():
+		run.tick_stream(0.1)
+	view_snapshot = run.viewers
+	tip_snapshot = run.stream_donations
+	run.try_clip(0.5)
+	_check(is_equal_approx(run.viewers - view_snapshot, base_viewers) and is_equal_approx(run.stream_donations - tip_snapshot, base_tips), "The first success after a miss earns only the base action reward")
+	_finish_shift(run)
+	run.end_stream()
+	run.start_combat()
+	run.finish_combat(20, 70.0)
+	_check(run.clip_streak == 0 and run.best_clip_streak == 0 and run.clips_hit == 0, "A new morning begins a fresh mastery challenge")
+
+func _test_active_vs_idle() -> void:
+	for definition in RunModel.GAMES:
+		var active_run = RunModel.new()
+		var idle_run = RunModel.new()
+		active_run.begin_stream(str(definition.id))
+		idle_run.begin_stream(str(definition.id))
+		_finish_shift(active_run, true)
+		_finish_shift(idle_run)
+		_check(active_run.viewers > idle_run.viewers * 1.25 and active_run.stream_donations > idle_run.stream_donations * 1.25, "Active %s play earns meaningfully more audience and tips than idle viewing" % definition.id)
+		_check(active_run.clip_streak == active_run.clips_hit and is_equal_approx(active_run.streak_multiplier(), 1.30), "Consistent %s play reaches but cannot exceed the mastery cap" % definition.id)
+		_check(active_run.can_end_stream() and idle_run.can_end_stream() and is_equal_approx(active_run.stream_time, idle_run.stream_time), "Mastery does not change the eight-hour shift length or soft-lock idle play")
+		print("MASTERY %s: active %.0f viewers/$%.1f; idle %.0f viewers/$%.1f" % [definition.id, active_run.viewers, active_run.stream_donations, idle_run.viewers, idle_run.stream_donations])
+
 func _test_overtime_and_loss() -> void:
 	var run = RunModel.new()
 	run.begin_stream("weird")
@@ -168,6 +235,12 @@ func _test_save_roundtrip() -> void:
 	_check(restored.donations == run.donations and is_equal_approx(restored.hp, run.hp) and is_equal_approx(restored.heat, run.heat), "Currency, sustain, and combat risk survive reload")
 	_check(restored.shop_offers() == run.shop_offers(), "Reload preserves exact shop inventory, price, and sold state")
 	_check(restored.reroll_cost() == run.reroll_cost(), "Reload preserves reroll costs")
+	_check(restored.clip_streak == run.clip_streak and restored.best_clip_streak == run.best_clip_streak, "A completed stream's mastery result survives its shop checkpoint")
+	var legacy_save: Dictionary = json_copy.duplicate(true)
+	legacy_save.erase("clip_streak")
+	legacy_save.erase("best_clip_streak")
+	var legacy_restored = RunModel.new()
+	_check(legacy_restored.load_save(legacy_save) and legacy_restored.clip_streak == 0 and legacy_restored.best_clip_streak == 0, "Existing checkpoints remain loadable without optional streak fields")
 	_check(restored.end_stream() == 0 and not restored.buy_upgrade("medkit"), "Reload cannot replay the bank or a sold heal")
 	run.start_combat()
 	restored.start_combat()
@@ -203,6 +276,12 @@ func _test_save_roundtrip() -> void:
 	invalid = stable.duplicate(true)
 	invalid["day"] = {}
 	_check(not restored.load_save(invalid), "Corrupted day data is rejected safely")
+	invalid = stable.duplicate(true)
+	invalid["clip_streak"] = int(stable.clips_hit) + 1
+	_check(not restored.load_save(invalid) and restored.to_save() == stable, "An impossible saved streak is rejected without replacing live state")
+	invalid = stable.duplicate(true)
+	invalid["best_clip_streak"] = "many"
+	_check(not restored.load_save(invalid), "Malformed mastery data is rejected safely")
 
 func _test_full_runs() -> void:
 	for game in RunModel.GAMES:
