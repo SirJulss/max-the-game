@@ -1,5 +1,6 @@
 class_name Player
 extends CharacterBody2D
+const FX := preload("res://src/presentation/pixel_fx.gd")
 
 signal health_changed(hp: float, maximum: float)
 signal died
@@ -92,7 +93,7 @@ func _physics_process(delta: float) -> void:
 	if combo_timeout == 0:
 		combo = 0
 	knockback = knockback.move_toward(Vector2.ZERO, 1800 * delta)
-	$AnimatedSprite2D.modulate = Color(4, 0.6, 0.8) if hit_flash > 0 else (Color(0.5, 1.6, 1.5, 0.65) if is_dashing else Color.WHITE)
+	$AnimatedSprite2D.modulate = Color.WHITE
 	if allow_combat and InputMap.has_action("special") and Input.is_action_just_pressed("special") and special_remaining <= 0:
 		special_remaining = special_cooldown
 		invulnerable = maxf(invulnerable, 0.3)
@@ -100,13 +101,15 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_set_transform(Vector2(0, 3), 0, Vector2(1, 0.4))
-	draw_circle(Vector2.ZERO, 21, Color(0.015, 0.025, 0.07, 0.45))
-	draw_set_transform(Vector2.ZERO)
+	FX.draw(self, "shadow", Vector2(0, 3), Vector2(42, 17), 0.0, Color(0.04, 0.05, 0.1, 0.45))
 	if active and allow_combat:
-		draw_arc(Vector2.ZERO, 24, 0, TAU, 32, Color("66f6d5") if dash_remaining == 0 else Color(0.3, 0.55, 0.65, 0.5), 2.0)
-		var tip := player_direction * 34.0
-		draw_line(tip, tip + player_direction * 12, Color("f8df83"), 3)
+		var ready_color := Color("66f6d5") if dash_remaining == 0 else Color(0.3, 0.55, 0.65, 0.5)
+		FX.draw(self, "ring", Vector2.ZERO, Vector2.ONE * 48, 0.0, ready_color)
+		FX.draw(self, "projectile", player_direction * 40, Vector2(16, 14), 0.0, Color("f8df83"), player_direction.angle())
+		if is_dashing:
+			FX.draw(self, "projectile", -player_direction * 22 + Vector2(0, -18), Vector2(62, 28), 0.0, Color(0.55, 1.0, 0.9, 0.7), player_direction.angle())
+		if hit_flash > 0:
+			FX.draw(self, "impact", Vector2(0, -34), Vector2.ONE * 70, 1.0 - hit_flash / 0.12, Color(1.0, 0.55, 0.65, 0.85))
 
 func update_aim() -> void:
 	var direction := get_global_mouse_position() - global_position

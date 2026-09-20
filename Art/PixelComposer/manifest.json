@@ -1,0 +1,86 @@
+{
+  "renderer": "Pixel Composer",
+  "rendererVersion": "1.21.9.0",
+  "renderMode": "normal application, native HLSL > Glow > Render Spritesheet > Export",
+  "frameCount": 12,
+  "frameSize": [
+    128,
+    128
+  ],
+  "sheetSize": [
+    1536,
+    128
+  ],
+  "timelineFPS": 24,
+  "nominalFootprint": [
+    96,
+    96
+  ],
+  "nominalRadius": 48,
+  "origin": [
+    64,
+    64
+  ],
+  "variants": [
+    "base",
+    "glow"
+  ],
+  "kinds": [
+    "ring",
+    "disc",
+    "swipe",
+    "charge",
+    "crosshair",
+    "impact",
+    "slash",
+    "projectile",
+    "jet_flame",
+    "puddle",
+    "bottle",
+    "shadow",
+    "halo"
+  ],
+  "directions": {
+    "default": "right (+X)",
+    "jet_flame": "left (-X); rotate -90deg for downward exhaust",
+    "bottle": "upright",
+    "shadow": "circular, flatten once at playback"
+  },
+  "coloredKinds": [
+    "bottle",
+    "puddle"
+  ],
+  "sourceSHA256": {
+    "Art/PixelComposer/Max-VFX.pxc": "bf3bbfaa40911ea5fccc3eff6514e8e8312af4dc1c24ebac76404e5079a6a277",
+    "Art/PixelComposer/Max-VFX.json": "bb73e10ba02a9a96668326f8cb8bf7bf941b438c19666616061584b30f21cf7b",
+    "tools/pixelcomposer_pack.py": "f4f270fc90579e443ee75cfa47f54103a7d2abe7932fd4fd72d68a8f09e40510"
+  },
+  "exportSHA256": {
+    "Assets/FX/PixelComposer/bottle.png": "fd3069486b2c4d0cab83b4a4b8866887f2bcce615e31171408fe35a6dacaf5fd",
+    "Assets/FX/PixelComposer/bottle_glow.png": "d8a0bd24a176e5b8227403bd5e6a995f5b71d8d7baffe3acc251e26432cdd6ff",
+    "Assets/FX/PixelComposer/charge.png": "2c328a5eff5612a268203b5397e886d278d14d62996c8470a9df75050d0c5e7b",
+    "Assets/FX/PixelComposer/charge_glow.png": "d66bb3ffed9e0a16cdada0bd61fa0003474d3b768a994a25bb8ae4e454291665",
+    "Assets/FX/PixelComposer/crosshair.png": "9487cb8c74390ca1c624be460e178329014a17b2c0499ed6203e8e4bef592413",
+    "Assets/FX/PixelComposer/crosshair_glow.png": "e9738ef443c73afc584ce87b7e8fbd21f52e57619a6706a2530f75796f19beea",
+    "Assets/FX/PixelComposer/disc.png": "837688c9fc8c4aee8d42b362313978e75ea2ffa902ab3e6e90f13149f21948e3",
+    "Assets/FX/PixelComposer/disc_glow.png": "94768e2d63a4aab40c4dc25ba259cb812da1551518ef35c1114884d01fba2928",
+    "Assets/FX/PixelComposer/halo.png": "d8f5b65dd4c331411e9064ac77cea38a40de396209f0fcc2fc812ed18776229e",
+    "Assets/FX/PixelComposer/halo_glow.png": "617b11593df073a7e124e9ecdb4d7ed6768c3b7162e647d6831b3b8199d63ce5",
+    "Assets/FX/PixelComposer/impact.png": "1c1099e149f5ece2a0dce1eab1cca8187b9200b39932c34b68263d801e849043",
+    "Assets/FX/PixelComposer/impact_glow.png": "d79ecfc0f9c66ac67f3be8713f3cc7970886d78ef6b5b9c8927fc3f76649c0ab",
+    "Assets/FX/PixelComposer/jet_flame.png": "6e179851df05a64c21cf304987b3472bb3b703414095e0a5d5225032413b83cd",
+    "Assets/FX/PixelComposer/jet_flame_glow.png": "4941a870c57d69ce8d5f4b232ac11b17b4bd43769c2d2c3f61f5cc03014c60cf",
+    "Assets/FX/PixelComposer/projectile.png": "ed56c2e97065e809ad0cdce988c12a63ffef7e25da4718f2348a046c8a634320",
+    "Assets/FX/PixelComposer/projectile_glow.png": "3f072ade1c6b4ea3fa25e374ace7765fa6871f04b5c7fe9c20e7c5bae6894572",
+    "Assets/FX/PixelComposer/puddle.png": "64484d417fd4e07686777484ac4f268562f632ce0ad0f99ec5fdb1f3b1e7669c",
+    "Assets/FX/PixelComposer/puddle_glow.png": "de5c8c9e2a1337cba470bb34cee3bedddd24606b82da0bbc8b655abd87c483fc",
+    "Assets/FX/PixelComposer/ring.png": "1f75ab9d8346330c9570414b7c8044436f402c90e91377671385e80ac21edf23",
+    "Assets/FX/PixelComposer/ring_glow.png": "fcc219ef1c37cd00e3a0d43ef5473117b2f8466eb59b80a8ac2cffbe15f2e740",
+    "Assets/FX/PixelComposer/shadow.png": "d3eb6f9eb14443da5b7060c581c11ab9c75e5d73102f88167527a53732f5aef6",
+    "Assets/FX/PixelComposer/shadow_glow.png": "9d240fd1ad2647833b1f1d167e87988b0942aceef798611639eaf0b788cbc7c3",
+    "Assets/FX/PixelComposer/slash.png": "5ed621c3a8fc4b8daef26dcfd2f126020d4aec6ed4c0ed76ce0c31700b224eec",
+    "Assets/FX/PixelComposer/slash_glow.png": "dc6befe29a98e70069284dff8efa2d3f911d77e3e944cb2f55c1693c5f5bb6c6",
+    "Assets/FX/PixelComposer/swipe.png": "6a109bf6abb4c6f23f872d3e3c80cdda03cfc6db4e66ed055c841f42b503bb20",
+    "Assets/FX/PixelComposer/swipe_glow.png": "a558d60aad6cbd9a2afa0fb59deb997afe4f4a5aad0a3e8bca112b8a6a88b545"
+  }
+}

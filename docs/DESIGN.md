@@ -12,9 +12,11 @@ The viewer goals are **80, 240, 900, 3,200, 12,000, and 50,000**. Passive growth
 | --- | --- | --- |
 | Turnip Farm | Low heat and steady progress; harvest target turnips | Lower tips and slower growth |
 | Ranked Rush | Fast viewer growth; fire at NPC targets | Highest passive heat |
-| Goose Court | Highest passive donation rate; time a honk | More heat than the cozy category |
+| Goose Court | Highest passive donation rate; react to left/right cases | More heat than the cozy category |
 
-All three games share a clear timing mechanic: press Space inside the 40–60% sweet spot. Success triggers the category's action animation and adds viewers, tips, and hype while slightly lowering heat. Misses reduce hype and raise heat. A short cooldown prevents repeated input from farming rewards.
+The games ask for different skills: Turnip Farm uses forgiving harvest timing, Ranked Rush asks the player to click moving marked targets (with a visible timing-lane Space alternative), and Goose Court asks for a left/right verdict before its timer expires: free a flower-carrying goose, bonk the bread thief. Success adds viewers, tips, and hype while slightly lowering heat. Misses reduce hype and raise heat. A short cooldown prevents repeated input from farming rewards.
+
+Every three consecutive successes adds 10% to action viewers and tips, capped at +30%. Fractional rewards accumulate even on the first day. A miss resets the current combo, while ignored cooldown input has no effect. The compact combo indicator replaces the hype readout. Pause freezes both the shift and minigame timers.
 
 Gameplay is continuous throughout the 64-second shift, without interrupting narrative prompts. Hitting the goal increases donations and heat growth for the remainder of the shift. At 16:00 the controller automatically moves to the shop, whether or not the audience target was met.
 
@@ -37,13 +39,13 @@ Reaching day three unlocks the Ragebait Rookie and Comfort Creator starting side
 
 | Enemy | Pressure and response |
 | --- | --- |
-| Tan | Approaches for a short telegraphed melee swipe; manage spacing |
+| Tan | Commits to a telegraphed frontal melee swipe; leave its sector or step behind him |
 | Louis | Throws arcing beer bottles at marked landing spots; leave the splash and lingering damaging puddle |
 | Julian | Rises with a jetpack and becomes untargetable, then slams a marked position; avoid or dash through the expanding shockwave |
 | Modzilla, day 3 | Large stomps and charges; gains reinforcements below half health |
 | The Algorithm, day 6 | Delayed advertising hazards and projectile rings; adds pressure below half health |
 
-Heat increases regular enemy count and enemy health/damage. Encounters spawn enemies over time instead of placing the full wave at once. Red tells, hit flashes, knockback, attack effects, health feedback, and sound distinguish threat and impact. Every fifth KO restores a little health, and clearing a yard also restores health.
+Heat increases regular enemy count and enemy health/damage. Encounters spawn enemies over time instead of placing the full wave at once. Arrivals keep at least 140 pixels of clearance from Max (210 for bosses) and fill a warning ring for 0.7 seconds before acting, including boss reinforcements. Red tells, hit flashes, knockback, attack effects, health feedback, and sound distinguish threat and impact. Every fifth KO restores a little health, and clearing a yard also restores health.
 
 ## Existing work retained
 
@@ -59,7 +61,9 @@ Heat increases regular enemy count and enemy health/damage. Encounters spawn ene
 | `Assets/Sounds/Music/MaxBackgroundLofi.wav` | Studio music |
 | `Assets/Sounds/Music/MaxFIghtingTrap.wav` | Combat music |
 
-Apartment/yard composition, minigames, telegraphs, projectiles, and other feedback combine retained artwork with code-drawn elements. The original NPC source files remain available, and `tools/export_aseprite.py` creates the committed PNG exports without requiring an Aseprite installation. Small sound effects are synthesized locally. The supplied source assets retain their existing provenance; this change does not grant new rights to them.
+Apartment/yard composition and minigames combine retained artwork with code-drawn scenery and controls. Visual effects use imported Pixel Composer animation strips from `Art/PixelComposer/Max-VFX.pxc`: 13 effects, 12 frames each, with separate native-Glow exports. This includes telegraphs, projectiles, jet flames, shockwaves, bottle splashes, slashes, and impact feedback. Godot places and plays the exported frames. The original NPC source files remain available, and `tools/export_aseprite.py` creates the committed PNG exports without requiring an Aseprite installation. The supplied source assets retain their existing provenance; this change does not grant new rights to them.
+
+Combat impacts trigger capped, decaying camera shake: ordinary hits are small; player damage, jetpack landings, stomps, and boss KOs are stronger. Dense hit events are coalesced. Bloom is baked inside Pixel Composer using its Glow nodes; there is no runtime bloom shader. The pause toggle disables camera shake and selects the base sprite sheets instead of their glow variants. The HUD occupies a separate CanvasLayer and stays still. The preference is saved separately from a run. Nineteen imported WAV effects use 8-bit-quantized pulse, triangle, and noise waves to distinguish attacks, coins, clips, jet launches, slams, and bottle impacts. `tools/chip_synth.gd` is an offline source generator; runtime playback loads the committed WAVs and retains the original music.
 
 The interface also uses **Tiny5**, copyright 2022–2024 The Tiny5 Project Authors, distributed under the SIL Open Font License 1.1. Its font and license are included as `Assets/Fonts/Tiny5-Regular.ttf` and `Assets/Fonts/OFL.txt`; the original project is [Gissio/font_tiny5](https://github.com/Gissio/font_tiny5).
 
@@ -70,11 +74,13 @@ The interface also uses **Tiny5**, copyright 2022–2024 The Tiny5 Project Autho
 | `Scenes/Game/Main.tscn` | Project entry scene |
 | `src/run/game.gd` | Phase transitions, UI, input, checkpoint and profile files |
 | `src/run/run_data.gd` | Scene-independent economy, streaming simulation, offers, builds, validated save payloads |
-| `src/ui/stream_stage.gd` | Three timing minigames inside the original animated PC |
+| `src/ui/stream_stage.gd` | Harvest timing, aimed targets, and reaction cases inside the original animated PC |
 | `src/combat/combat_arena.gd` | Spawning, attack resolution, projectiles, hazards, rewards, security |
 | `src/combat/hater.gd` | Regular enemies and boss patterns |
 | `Scenes/Levels/Player/player.gd` | Combat stats, aim, damage, healing, cooldowns, animation mapping |
-| `src/presentation/` | Studio/yard backdrop and music/effects playback |
+| `src/presentation/` | Studio/yard backdrop, camera shake, imported sprite/WAV and original music playback |
+| `Art/PixelComposer/` | Editable timeline/Glow graph and export workflow |
+| `Assets/FX/PixelComposer/` | 26 rendered animation sheets, base and baked-Glow variants |
 
 The project uses native GDScript and Godot nodes, with no autoload requirement or external runtime dependencies. Legacy exploratory scenes may remain in the repository; the configured entry point is `Scenes/Game/Main.tscn`.
 
@@ -82,11 +88,9 @@ The project uses native GDScript and Godot nodes, with no autoload requirement o
 
 Run payloads are versioned and validated before replacing live state. Checkpoints are allowed in `setup` and `shop`; the controller presents `setup` checkpoints as apartment mornings. They retain HP, currency, purchases, equipped weapon, returning fans, shop inventory, sold flags, reroll costs, and RNG state. RNG state is serialized as text to preserve its full integer precision through JSON. Stream and combat callbacks cannot deposit a reward twice. The controller saves through a temporary file and rename; win/loss removes the run checkpoint but retains the profile.
 
-At implementation verification, **235 model checks**, **60 game-flow checks**, and **18 combat-smoke assertions** passed. The GitHub Actions workflow imports assets and runs the same suites on Linux using official Godot 4.5.1; the hosted run also passed. Headless tests require no .NET runtime or export templates.
+`tools/test.ps1` and GitHub Actions import assets and run the model, minigame, audio, Pixel Composer asset, camera, full game-flow, and combat suites with official Godot 4.5.1. The asset suite rejects missing, blank, or static animation strips. Audio checks preserve quantization, headroom, fades, and imported waveform contents. Headless tests require no .NET runtime or export templates.
 
-The final apartment/minigame/NPC version also passed a fresh asset import and all three suites through `tools/test.ps1` with Godot 4.5.1 on Windows.
-
-The standalone Windows release was built with the official Godot 4.5.1 release template. All 60 flow checks also passed against that exported executable and its packed resources.
+The standalone Windows release uses the official Godot 4.5.1 release template. The flow suite can also run against the exported executable and its packed resources, using the external test script and `-- --test`.
 
 The flow fixture deliberately raises damage to test all six days and both boss transitions quickly. It must not be interpreted as balance evidence. The optional input-driven probe uses normal attack, movement, dash, and special inputs with fixed sample builds:
 
@@ -98,4 +102,4 @@ It reports win/loss, HP, time, and KOs for all three weapons on days 1, 3, and 6
 
 ## Deliberate limits
 
-Content is concentrated in three timing games, three weapons, three regular enemies, two bosses, one apartment, and one yard. The minigames share a timing mechanic with different targets, actions, tempos, and economic profiles. There is no equipment inventory screen beyond shop weapon selection, no procedural map or endless mode, and no connection to real streaming services. Keyboard/mouse and a desktop-sized landscape display are the supported inputs/layout. Original pixel art, procedural effects, and generated audio favor readable feedback. Difficulty and long-term replay value still benefit from human playtesting.
+Content is concentrated in three minigames, three weapons, three regular enemies, two bosses, one apartment, and one yard. The minigames differ in player actions and economic profiles. There is no equipment inventory screen beyond shop weapon selection, no procedural map or endless mode, and no connection to real streaming services. Keyboard/mouse and a desktop-sized landscape display are the supported inputs/layout. Original pixel art, imported Pixel Composer animations, and chiptune audio favor readable feedback. Difficulty and long-term replay value still benefit from human playtesting.
