@@ -1,0 +1,145 @@
+[
+  {
+    "source": "Assets/npc/julian.ase",
+    "sheet": "Assets/npc/julian.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      100,
+      100
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/julian_rechts.ase",
+    "sheet": "Assets/npc/julian_rechts.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      400,
+      400
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/julianBack.ase",
+    "sheet": "Assets/npc/julianBack.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      500,
+      500
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/louis.ase",
+    "sheet": "Assets/npc/louis.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      300,
+      300
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/louis_rechts.ase",
+    "sheet": "Assets/npc/louis_rechts.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      400,
+      400
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/louisBack.ase",
+    "sheet": "Assets/npc/louisBack.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      500,
+      500
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/tan.ase",
+    "sheet": "Assets/npc/tan.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 1,
+    "layout": "horizontal",
+    "durations_ms": [
+      300
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/tan_rechts.ase",
+    "sheet": "Assets/npc/tan_rechts.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      100,
+      100
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  },
+  {
+    "source": "Assets/npc/tanBack.ase",
+    "sheet": "Assets/npc/tanBack.png",
+    "frame_width": 32,
+    "frame_height": 64,
+    "frames": 2,
+    "layout": "horizontal",
+    "durations_ms": [
+      500,
+      500
+    ],
+    "color_depth": 32,
+    "layers": [
+      "Layer 1"
+    ]
+  }
+]

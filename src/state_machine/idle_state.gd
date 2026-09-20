@@ -1,32 +1,17 @@
-# idle.gd
 extends NodeState
 @export var player: Player
 @export var animated_sprite_2d: AnimatedSprite2D
 
-var _current_anim := ""
-
 func _on_enter() -> void:
-	_current_anim = ""
+	animated_sprite_2d.speed_scale = 1
 
-func _play_if_changed(anim_name: String) -> void:
-	if anim_name == "":
-		return
-	if anim_name != _current_anim:
-		_current_anim = anim_name
-		animated_sprite_2d.play(anim_name)
-
-func _on_physics_process(_delta: float) -> void:
-	# Wenn Input vorhanden -> Walk
-	if GameInputEvent.is_movement_input():
-		transition.emit("Walk")
-		return
-	
-	if Input.is_action_just_pressed("attack"):
+func _on_physics_process(delta: float) -> void:
+	player.update_aim()
+	player.move_character(delta)
+	animated_sprite_2d.play(player.get_animation_for_direction(player.player_direction, true))
+	if player.wants_dash():
+		transition.emit("Dash")
+	elif player.wants_attack():
 		transition.emit("Attack")
-		return
-	# Blickrichtung zur Maus (Idle verwendet 4 Richtungen)
-	var anim = player.get_animation_for_mouse(player.get_global_mouse_position(), true, "MaxIdleFront")
-	_play_if_changed(anim)
-
-func _on_exit() -> void:
-	animated_sprite_2d.stop()
+	elif GameInputEvent.is_movement_input():
+		transition.emit("Walk")

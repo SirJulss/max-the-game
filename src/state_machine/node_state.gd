@@ -2,7 +2,7 @@ class_name NodeState
 extends Node
 
 @warning_ignore("unused_signal")
-signal transition 
+signal transition(state_name: String)
 
 
 func _on_process(_delta : float) -> void:
