@@ -138,7 +138,7 @@ def main():
     project = build_project(output_dir, args.kind or KINDS)
     write_pxc(args.project, project)
     # Human-readable companion makes all original formulas reviewable in git.
-    args.project.with_suffix(".json").write_text(json.dumps(project,indent=2),encoding="utf8")
+    args.project.with_suffix(".json").write_text(json.dumps(project,indent=2),encoding="utf8",newline="\n")
     print(args.project.resolve())
 
 

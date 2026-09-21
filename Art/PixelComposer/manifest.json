@@ -52,8 +52,8 @@
   ],
   "sourceSHA256": {
     "Art/PixelComposer/Max-VFX.pxc": "bf3bbfaa40911ea5fccc3eff6514e8e8312af4dc1c24ebac76404e5079a6a277",
-    "Art/PixelComposer/Max-VFX.json": "bb73e10ba02a9a96668326f8cb8bf7bf941b438c19666616061584b30f21cf7b",
-    "tools/pixelcomposer_pack.py": "f4f270fc90579e443ee75cfa47f54103a7d2abe7932fd4fd72d68a8f09e40510"
+    "Art/PixelComposer/Max-VFX.json": "3afd2fa2f3cc240e6db8b1cc80766d77b769148a7e0153d3bf3406defe59dc26",
+    "tools/pixelcomposer_pack.py": "c95731c86a85991ab3542bdbb39f4310ea0d2e3e89dc4a96b447bcb87d7e1e7d"
   },
   "exportSHA256": {
     "Assets/FX/PixelComposer/bottle.png": "fd3069486b2c4d0cab83b4a4b8866887f2bcce615e31171408fe35a6dacaf5fd",
